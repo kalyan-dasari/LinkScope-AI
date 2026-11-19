@@ -5,7 +5,7 @@ from app.utils.url_validator import validate_public_url
 def test_rejects_localhost():
     with pytest.raises(InvalidUrlError):
         validate_public_url("http://localhost")
-
+ 
 def test_rejects_localhost_ip():
     with pytest.raises(InvalidUrlError):
         validate_public_url("http://127.0.0.1")
