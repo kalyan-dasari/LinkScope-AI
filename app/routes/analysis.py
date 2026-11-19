@@ -9,6 +9,8 @@ from app.exceptions import (
 from app.schemas import ErrorResponse, LinkAnalysisRequest, LinkAnalysisResponse
 from app.services.analysis_service import analyze_website
 
+HTTP_422 = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
+
 router = APIRouter(tags=["Link Analysis"])
 
 @router.post(
@@ -25,7 +27,7 @@ router = APIRouter(tags=["Link Analysis"])
             "model": ErrorResponse,
             "description": "Invalid URL scheme, missing host, or private/SSRF target.",
         },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+        HTTP_422: {
             "model": ErrorResponse,
             "description": "Insufficient readable text extracted from website (< 100 characters).",
         },
@@ -50,7 +52,7 @@ async def link_analysis(payload: LinkAnalysisRequest):
     except InvalidUrlError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except ContentTooShortError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=HTTP_422, detail=str(exc)) from exc
     except WebsiteInaccessibleError as exc:
         raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     except LLMConfigError as exc:
