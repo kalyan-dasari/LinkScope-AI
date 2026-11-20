@@ -1,5 +1,7 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from app.routes.analysis import router as analysis_router
 
 app = FastAPI(
@@ -39,3 +41,8 @@ async def root():
 @app.get("/health", tags=["General"], summary="Service Health Probe")
 async def health():
     return {"status": "ok", "service": "LinkScope AI"}
+
+@app.get("/demo", summary="Interactive Visual Demo UI", include_in_schema=False)
+async def demo():
+    html_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "demo.html")
+    return FileResponse(html_path)
