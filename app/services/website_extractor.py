@@ -7,24 +7,42 @@ from app.exceptions import InvalidUrlError, WebsiteInaccessibleError
 from app.utils.url_validator import validate_public_url
 
 USER_AGENT = "LinkScopeAI/0.1 (website analysis; assessment project)"
-MAX_REDIRECT_HOPS = 5
-MAX_RESPONSE_BYTES = 2 * 1024 * 1024  # 2 MB safety cap per page
-RELEVANT_PATH_HINTS = ("about", "service", "product", "solution", "contact", "company", "pricing", "feature")
+RELEVANT_PATH_HINTS = (
+    "about",
+    "service",
+    "product",
+    "solution",
+    "industr",
+    "contact",
+    "company",
+    "pricing",
+    "feature",
+)
 
 def _extract_page(html: str, url: str) -> dict:
-    soup = BeautifulSoup(html, "html.parser")
-    for tag in soup(["script", "style", "noscript", "svg", "iframe", "nav", "footer", "form"]):
+    """Safely parses HTML, strips boilerplate, and extracts semantic textual data."""
+    try:
+        soup = BeautifulSoup(html, "html.parser")
+    except Exception as exc:
+        # Graceful handling for malformed HTML
+        soup = BeautifulSoup("", "html.parser")
+
+    for tag in soup(["script", "style", "noscript", "svg", "iframe", "nav", "footer", "form", "button"]):
         tag.decompose()
 
     title = soup.title.get_text(" ", strip=True) if soup.title else ""
     description = ""
-    meta = soup.find("meta", attrs={"name": "description"}) or soup.find("meta", attrs={"property": "og:description"})
+    meta = (
+        soup.find("meta", attrs={"name": "description"})
+        or soup.find("meta", attrs={"property": "og:description"})
+        or soup.find("meta", attrs={"name": "twitter:description"})
+    )
     if meta and meta.get("content"):
         description = meta["content"].strip()
 
     headings = [h.get_text(" ", strip=True) for h in soup.find_all(["h1", "h2", "h3"]) if h.get_text(strip=True)]
-    
-    # Priority on main semantic content container if available
+
+    # Prioritize main semantic content block
     main = soup.find("main") or soup.find("article") or soup.body or soup
     text = " ".join(main.stripped_strings)
     text = " ".join(text.split())
@@ -52,6 +70,7 @@ def _extract_page(html: str, url: str) -> dict:
     }
 
 def _choose_pages(home: dict, base_url: str, max_pages: int) -> list[str]:
+    """Scores and selects the most relevant internal subpages for deeper domain understanding."""
     scored = []
     seen = {base_url.rstrip("/")}
     for link in home.get("internal_links", []):
@@ -66,31 +85,44 @@ def _choose_pages(home: dict, base_url: str, max_pages: int) -> list[str]:
     return scored[:max(0, max_pages - 1)]
 
 async def _fetch(client: httpx.AsyncClient, target_url: str) -> dict:
+    """
+    Fetches a webpage with multi-hop redirect verification, stream-bounded size limits,
+    and granular HTTP error differentiation.
+    """
     current_url = target_url
     hops = 0
     visited_urls = set()
+    max_hops = settings.max_redirects
+    max_bytes = settings.max_response_bytes
 
-    while hops < MAX_REDIRECT_HOPS:
+    while hops < max_hops:
         validate_public_url(current_url)
         visited_urls.add(current_url)
 
         try:
-            # Stream response to enforce size limits before allocating memory
             async with client.stream("GET", current_url, follow_redirects=False) as response:
-                # Handle redirect status codes with SSRF verification on every hop
+                # Handle HTTP redirects with per-hop SSRF validation
                 if response.status_code in (301, 302, 303, 307, 308):
                     location = response.headers.get("location")
                     if not location:
                         raise WebsiteInaccessibleError(f"Target '{current_url}' redirected without a Location header.")
-                    
+
                     next_url = urljoin(current_url, location)
                     if next_url in visited_urls:
                         raise WebsiteInaccessibleError(f"Circular redirect detected targeting '{next_url}'.")
-                    
+
                     current_url = next_url
                     hops += 1
                     continue
 
+                if response.status_code == 403:
+                    raise WebsiteInaccessibleError(
+                        f"Access to '{current_url}' was forbidden (HTTP 403). The website may block automated crawlers or use anti-bot gates."
+                    )
+                if response.status_code == 404:
+                    raise WebsiteInaccessibleError(
+                        f"Target website returned HTTP 404 Not Found for '{current_url}'."
+                    )
                 if response.status_code >= 400:
                     raise WebsiteInaccessibleError(
                         f"Target website returned HTTP {response.status_code} ({response.reason_phrase}) for '{current_url}'."
@@ -98,35 +130,42 @@ async def _fetch(client: httpx.AsyncClient, target_url: str) -> dict:
 
                 content_type = response.headers.get("content-type", "").lower()
                 if "text/html" not in content_type and "application/xhtml" not in content_type:
-                    raise WebsiteInaccessibleError(f"URL did not return HTML content (Content-Type: '{content_type}'): {current_url}")
+                    raise WebsiteInaccessibleError(
+                        f"URL did not return HTML content (Content-Type: '{content_type}'): {current_url}"
+                    )
 
-                # Read body in chunks up to MAX_RESPONSE_BYTES
+                # Stream and read chunks up to maximum allowed bytes
                 chunks = []
                 total_bytes = 0
                 async for chunk in response.aiter_bytes():
                     total_bytes += len(chunk)
-                    if total_bytes > MAX_RESPONSE_BYTES:
+                    if total_bytes > max_bytes:
                         raise WebsiteInaccessibleError(
-                            f"Target webpage exceeds maximum allowed size ({MAX_RESPONSE_BYTES // (1024*1024)}MB): {current_url}"
+                            f"Target webpage exceeds maximum allowed size ({max_bytes // (1024*1024)}MB): {current_url}"
                         )
                     chunks.append(chunk)
 
                 raw_body = b"".join(chunks)
-                # Decode using response encoding or fallback to utf-8
                 encoding = response.encoding or "utf-8"
                 html_text = raw_body.decode(encoding, errors="replace")
                 return _extract_page(html_text, str(response.url))
 
         except (httpx.TimeoutException, TimeoutError) as exc:
-            raise WebsiteInaccessibleError(f"Connection to '{current_url}' timed out after {settings.request_timeout_seconds}s.") from exc
+            raise WebsiteInaccessibleError(
+                f"Connection to '{current_url}' timed out after {settings.request_timeout_seconds}s."
+            ) from exc
         except (httpx.ConnectError, httpx.NetworkError) as exc:
-            raise WebsiteInaccessibleError(f"Failed to connect to '{current_url}': Network or host unreachable.") from exc
+            raise WebsiteInaccessibleError(
+                f"Failed to connect to '{current_url}': Host unreachable or network connection refused."
+            ) from exc
         except (InvalidUrlError, WebsiteInaccessibleError):
             raise
         except Exception as exc:
-            raise WebsiteInaccessibleError(f"Unexpected error while fetching '{current_url}': {type(exc).__name__} - {exc}") from exc
+            raise WebsiteInaccessibleError(
+                f"Unexpected error while fetching '{current_url}': {type(exc).__name__} - {exc}"
+            ) from exc
 
-    raise WebsiteInaccessibleError(f"Exceeded maximum redirect limit ({MAX_REDIRECT_HOPS} hops) for URL: {target_url}")
+    raise WebsiteInaccessibleError(f"Exceeded maximum redirect limit ({max_hops} hops) for URL: {target_url}")
 
 async def extract_website(url: str) -> list[dict]:
     """
@@ -136,12 +175,12 @@ async def extract_website(url: str) -> list[dict]:
     validate_public_url(url)
     timeout = httpx.Timeout(settings.request_timeout_seconds)
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
-    
+
     async with httpx.AsyncClient(timeout=timeout, limits=limits, headers={"User-Agent": USER_AGENT}) as client:
         home = await _fetch(client, url)
         candidate_pages = _choose_pages(home, url, settings.max_pages)
         pages = [home]
-        
+
         if candidate_pages:
             results = await asyncio.gather(
                 *[_fetch(client, page_url) for page_url in candidate_pages],
@@ -151,12 +190,12 @@ async def extract_website(url: str) -> list[dict]:
                 if isinstance(result, dict):
                     pages.append(result)
 
-    # Bound total text across all retrieved pages
+    # Bound total combined text length
     remaining = settings.max_content_chars
     for page in pages:
         page["text"] = page["text"][:remaining]
         remaining -= len(page["text"])
         if remaining <= 0:
             break
-            
+
     return pages
