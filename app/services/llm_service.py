@@ -77,17 +77,20 @@ class GroqProvider(BaseLLMProvider):
             from groq import Groq
             client = Groq(api_key=self.api_key)
             prompt = build_analysis_prompt(site_context)
-            schema_json = json.dumps(AnalysisPayload.model_json_schema(), indent=2)
+            schema_json = json.dumps(AnalysisPayload.model_json_schema())
             system_msg = (
                 f"{prompt}\n\n"
+                f"CONCISENESS REQUIREMENT:\n"
+                f"Be crisp, factual, and concise. Keep bullet points, summaries, and descriptions to 1-2 punchy sentences. "
+                f"Avoid verbose fluff. Ensure all 5 sections are populated completely within token bounds.\n\n"
                 f"STRICT SCHEMA REQUIREMENTS:\n"
                 f"You MUST return a JSON object with top-level keys 'brand' and 'analysis'.\n"
                 f"'analysis' MUST contain ALL FIVE sections:\n"
-                f"  1. 'competitor_analysis' (with brand_overview, business_model, competitors, strengths, weaknesses, gaps, advantages, opportunities)\n"
+                f"  1. 'competitor_analysis' (brand_overview, business_model, competitors, strengths, weaknesses, gaps, advantages, opportunities)\n"
                 f"  2. 'target_search_queries' (EXACTLY 5 query objects with query, platforms, intent, business_relevance, target_audience)\n"
-                f"  3. 'seo_improvements' (with primary_keyword, secondary_keywords, long_tail_keywords, recommended_title, meta_description, etc.)\n"
-                f"  4. 'top_services' (list of 1 to 5 service objects with name, description, target_industry, target_customer, main_benefit, source)\n"
-                f"  5. 'target_audience' (with primary_audience, secondary_audience, industry_segments, business_types, customer_profiles, etc.)\n\n"
+                f"  3. 'seo_improvements' (primary_keyword, secondary_keywords, long_tail_keywords, recommended_title, meta_description, etc.)\n"
+                f"  4. 'top_services' (between 1 and 5 service objects with name, description, target_industry, target_customer, main_benefit, source)\n"
+                f"  5. 'target_audience' (primary_audience, secondary_audience, industry_segments, business_types, customer_profiles, etc.)\n\n"
                 f"JSON Schema:\n{schema_json}"
             )
 
@@ -98,14 +101,14 @@ class GroqProvider(BaseLLMProvider):
                     {
                         "role": "user",
                         "content": (
-                            "Analyze the website evidence and produce the complete JSON report. "
+                            "Analyze the website crawl evidence and produce the complete JSON report. "
                             "Ensure none of the 5 analysis sections are omitted."
                         ),
                     },
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
-                max_tokens=4096,
+                max_tokens=3000,
             )
         except Exception as exc:
             raise LLMServiceError(f"Groq API request failed ({type(exc).__name__}): {exc}") from exc
