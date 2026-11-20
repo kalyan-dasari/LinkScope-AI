@@ -223,6 +223,7 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 Access the service:
 - **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 - **ReDoc Alternative Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **Visual Presentation Demo UI (Bonus)**: [http://127.0.0.1:8000/demo](http://127.0.0.1:8000/demo)
 - **Service Health Probe**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
 ---
@@ -233,6 +234,7 @@ Access the service:
 | :--- | :--- | :--- | :--- |
 | `GET` | `/` | API metadata, version, and documentation links | `200 OK` |
 | `GET` | `/health` | Liveness and readiness health probe | `200 OK` |
+| `GET` | `/demo` | Optional visual presentation dashboard for live evaluator walkthroughs | `200 OK` |
 | `POST` | `/link-analysis` | Crawls website and performs AI analysis | `200`, `400`, `422`, `502`, `503`, `500` |
 
 ---
