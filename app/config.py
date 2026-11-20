@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-2.0-flash"
     
     groq_api_key: str = ""
-    groq_model: str = "qwen/qwen3.8-27b"
+    groq_model: str = "openai/gpt-oss-20b"
     
     # Crawler and Security Limits
     request_timeout_seconds: float = 15.0
