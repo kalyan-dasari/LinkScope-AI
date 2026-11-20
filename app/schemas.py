@@ -1,5 +1,19 @@
 from typing import Literal
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, field_validator
+
+def _coerce_str_list(v: object) -> list[str]:
+    """Coerces strings (newline or comma separated) or single items into a clean list of strings."""
+    if isinstance(v, str):
+        if "\n" in v:
+            return [line.strip("- *•").strip() for line in v.split("\n") if line.strip()]
+        if "," in v and not v.startswith("http"):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            if len(parts) > 1:
+                return parts
+        return [v.strip()] if v.strip() else []
+    if isinstance(v, list):
+        return [str(item).strip() for item in v if item is not None and str(item).strip()]
+    return []
 
 class LinkAnalysisRequest(BaseModel):
     url: HttpUrl = Field(
@@ -21,6 +35,11 @@ class Competitor(BaseModel):
     )
     notes: str | None = Field(default=None, description="Contextual notes on competitive overlap")
 
+    @field_validator("strengths", "weaknesses", mode="before")
+    @classmethod
+    def coerce_lists(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
+
 class CompetitorAnalysis(BaseModel):
     brand_overview: str = Field(description="High-level positioning and market category overview")
     business_model: str | None = Field(default=None, description="Identified or inferred business model (e.g. B2B SaaS, Marketplace)")
@@ -32,6 +51,19 @@ class CompetitorAnalysis(BaseModel):
     competitive_advantages: list[str] = Field(default_factory=list, description="Unique differentiators, moats, and USPs")
     opportunities: list[str] = Field(default_factory=list, description="Underserved market needs or strategic growth avenues")
 
+    @field_validator(
+        "main_products_or_services",
+        "brand_strengths",
+        "brand_weaknesses",
+        "competitive_gaps",
+        "competitive_advantages",
+        "opportunities",
+        mode="before",
+    )
+    @classmethod
+    def coerce_lists(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
+
 # --- SECTION 2: TOP FIVE TARGET SEARCH QUERIES ---
 
 class SearchQuery(BaseModel):
@@ -40,6 +72,11 @@ class SearchQuery(BaseModel):
     intent: str = Field(description="Search intent: Informational, Commercial, Transactional, Navigational")
     business_relevance: str = Field(description="Relevance to customer acquisition, pipeline growth, or retention")
     target_audience: str = Field(description="The specific buyer persona or user conducting this search")
+
+    @field_validator("platforms", mode="before")
+    @classmethod
+    def coerce_platforms(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
 
 # --- SECTION 3: SEO RECOMMENDATIONS ---
 
@@ -54,6 +91,19 @@ class SEOImprovements(BaseModel):
     on_page_improvements: list[str] = Field(default_factory=list, description="Actionable on-page optimizations (heading structure, CTAs)")
     technical_seo_suggestions: list[str] = Field(default_factory=list, description="Evidence-backed technical SEO improvements")
 
+    @field_validator(
+        "secondary_keywords",
+        "long_tail_keywords",
+        "business_related_keywords",
+        "content_recommendations",
+        "on_page_improvements",
+        "technical_seo_suggestions",
+        mode="before",
+    )
+    @classmethod
+    def coerce_lists(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
+
 # --- SECTION 4: TOP FIVE SERVICES ---
 
 class ServiceInsight(BaseModel):
@@ -66,6 +116,11 @@ class ServiceInsight(BaseModel):
         default="extracted",
         description="Whether explicitly extracted from website text or inferred from broader messaging",
     )
+
+    @field_validator("target_industry", "target_customer", mode="before")
+    @classmethod
+    def coerce_lists(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
 
 # --- SECTION 5: TARGET AUDIENCE ---
 
@@ -84,6 +139,23 @@ class TargetAudience(BaseModel):
         default="inferred",
         description="Whether audience details are directly confirmed on-site or inferred",
     )
+
+    @field_validator(
+        "primary_audience",
+        "secondary_audience",
+        "industry_segments",
+        "business_types",
+        "customer_profiles",
+        "geographic_markets",
+        "customer_needs",
+        "customer_interests",
+        "marketing_segments",
+        "targeting_opportunities",
+        mode="before",
+    )
+    @classmethod
+    def coerce_lists(cls, v: object) -> list[str]:
+        return _coerce_str_list(v)
 
 # --- COMPOSITE SCHEMAS ---
 
