@@ -58,7 +58,7 @@ async def analyze_website(url: str) -> LinkAnalysisResponse:
         analysis=payload.analysis,
         metadata=Metadata(
             pages_analyzed=len(pages),
-            analysis_model=settings.gemini_model,
+            analysis_model=settings.active_model,
             processing_time_seconds=elapsed_seconds,
         ),
     )
