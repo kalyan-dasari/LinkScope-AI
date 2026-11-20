@@ -80,12 +80,16 @@ def test_analyze_content_success_with_mocked_gemini():
     mock_response.text = json_str
     mock_client.models.generate_content.return_value = mock_response
 
-    with patch("app.services.llm_service.settings.gemini_api_key", "mock_key"):
-        with patch("app.services.llm_service.genai.Client", return_value=mock_client):
-            result = analyze_content({"website": "https://example.com", "pages": []})
-            assert result.brand.name == "TestBrand"
-            assert len(result.analysis.target_search_queries) == 5
-            assert result.analysis.seo_improvements.primary_keyword == "ai agents"
+    with patch("app.services.llm_service.settings.llm_provider", "gemini"):
+        with patch("app.services.llm_service.settings.gemini_api_key", "mock_key"):
+            with patch("app.services.llm_service.settings.groq_api_key", ""):
+                with patch("app.services.llm_service.genai.Client", return_value=mock_client):
+                    provider = get_llm_provider()
+                    assert isinstance(provider, GeminiProvider)
+                    result = provider.analyze({"website": "https://example.com", "pages": []})
+                    assert result.brand.name == "TestBrand"
+                    assert len(result.analysis.target_search_queries) == 5
+                    assert result.analysis.seo_improvements.primary_keyword == "ai agents"
 
 def test_analyze_content_success_with_mocked_groq():
     payload_obj = _generate_valid_payload()
