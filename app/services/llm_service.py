@@ -60,6 +60,142 @@ class GeminiProvider(BaseLLMProvider):
         except Exception as exc:
             raise LLMServiceError(f"LLM output failed schema validation: {exc}") from exc
 
+GROQ_SCHEMA_SKELETON = """{
+  "brand": {
+    "name": "Brand Name",
+    "category": "Market Category",
+    "summary": "Concise 1-2 sentence brand summary",
+    "source": "website_content"
+  },
+  "analysis": {
+    "competitor_analysis": {
+      "brand_overview": "Overview of brand positioning",
+      "business_model": "e.g. Marketplace, B2B SaaS, Agency",
+      "main_products_or_services": ["Product/Service 1", "Product/Service 2"],
+      "competitors": [
+        {
+          "name": "Competitor 1",
+          "website": "https://example.com",
+          "description": "Core offering",
+          "strengths": ["Strength 1"],
+          "weaknesses": ["Weakness 1"],
+          "verification_status": "ai_suggested",
+          "notes": "Positioning overlap"
+        },
+        {
+          "name": "Competitor 2",
+          "website": "https://example.com",
+          "description": "Core offering",
+          "strengths": ["Strength 1"],
+          "weaknesses": ["Weakness 1"],
+          "verification_status": "ai_suggested",
+          "notes": "Positioning overlap"
+        },
+        {
+          "name": "Competitor 3",
+          "website": "https://example.com",
+          "description": "Core offering",
+          "strengths": ["Strength 1"],
+          "weaknesses": ["Weakness 1"],
+          "verification_status": "ai_suggested",
+          "notes": "Positioning overlap"
+        }
+      ],
+      "brand_strengths": ["Strength 1"],
+      "brand_weaknesses": ["Weakness 1"],
+      "competitive_gaps": ["Gap 1"],
+      "competitive_advantages": ["Advantage 1"],
+      "opportunities": ["Opportunity 1"]
+    },
+    "target_search_queries": [
+      {"query": "Query 1", "platforms": ["Google"], "intent": "Commercial", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 2", "platforms": ["Google"], "intent": "Informational", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 3", "platforms": ["Google"], "intent": "Transactional", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 4", "platforms": ["LinkedIn"], "intent": "Commercial", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 5", "platforms": ["Google"], "intent": "Navigational", "business_relevance": "Relevance", "target_audience": "Audience persona"}
+    ],
+    "seo_improvements": {
+      "primary_keyword": "Primary keyword",
+      "secondary_keywords": ["Secondary keyword 1"],
+      "long_tail_keywords": ["Long tail phrase 1"],
+      "business_related_keywords": ["Industry keyword 1"],
+      "recommended_title": "Optimized HTML Title (50-60 chars)",
+      "meta_description": "Optimized Meta Description (140-160 chars)",
+      "content_recommendations": ["Content recommendation 1"],
+      "on_page_improvements": ["On-page improvement 1"],
+      "technical_seo_suggestions": ["Technical suggestion 1"]
+    },
+    "top_services": [
+      {
+        "name": "Service Name",
+        "description": "Detailed description",
+        "target_industry": ["Industry 1"],
+        "target_customer": ["Customer persona 1"],
+        "main_benefit": "Key ROI or benefit",
+        "source": "extracted"
+      }
+    ],
+    "target_audience": {
+      "primary_audience": ["Primary decision-makers"],
+      "secondary_audience": ["Secondary users/evaluators"],
+      "industry_segments": ["Segment 1"],
+      "business_types": ["B2B / B2C"],
+      "customer_profiles": ["Profile 1"],
+      "geographic_markets": ["Global / Regional"],
+      "customer_needs": ["Need 1"],
+      "customer_interests": ["Interest 1"],
+      "marketing_segments": ["Segment 1"],
+      "targeting_opportunities": ["Opportunity 1"],
+      "source_classification": "inferred"
+    }
+  }
+}"""
+
+def _format_groq_evidence(site_context: dict, max_hp_chars: int = 4000, max_sub_chars: int = 1500) -> str:
+    target_url = site_context.get("website") or site_context.get("base_url") or ""
+    parts = [f"TARGET WEBSITE: {target_url}"]
+
+    pages = site_context.get("pages", [])
+    if pages:
+        hp = pages[0]
+        parts.append("\n--- HOMEPAGE EVIDENCE ---")
+        if hp.get("title"):
+            parts.append(f"Title: {hp['title']}")
+        if hp.get("meta_description"):
+            parts.append(f"Meta Description: {hp['meta_description']}")
+        if hp.get("headings"):
+            parts.append(f"Headings: {' | '.join(hp['headings'][:10])}")
+        content = hp.get("content") or hp.get("text") or ""
+        if content:
+            parts.append(f"Content:\n{content[:max_hp_chars]}")
+
+        subpages = pages[1:]
+        if subpages:
+            parts.append(f"\n--- INTERNAL SUBPAGES ({len(subpages)} pages) ---")
+            for i, sp in enumerate(subpages[:3], 1):
+                parts.append(f"\nSubpage {i} ({sp.get('url')}):")
+                if sp.get("title"):
+                    parts.append(f"Title: {sp['title']}")
+                if sp.get("headings"):
+                    parts.append(f"Headings: {' | '.join(sp['headings'][:6])}")
+                sp_content = sp.get("content") or sp.get("text") or ""
+                if sp_content:
+                    parts.append(f"Content: {sp_content[:max_sub_chars]}")
+    else:
+        hp = site_context.get("homepage", {})
+        parts.append("\n--- HOMEPAGE EVIDENCE ---")
+        if hp.get("title"):
+            parts.append(f"Title: {hp['title']}")
+        if hp.get("meta_description"):
+            parts.append(f"Meta Description: {hp['meta_description']}")
+        if hp.get("headings"):
+            parts.append(f"Headings: {' | '.join(hp['headings'][:10])}")
+        content = hp.get("content") or hp.get("text") or ""
+        if content:
+            parts.append(f"Content:\n{content[:max_hp_chars]}")
+
+    return "\n".join(parts)
+
 class GroqProvider(BaseLLMProvider):
     """Groq LPU provider running high-speed models (e.g. openai/gpt-oss-120b)."""
 
@@ -76,39 +212,34 @@ class GroqProvider(BaseLLMProvider):
         try:
             from groq import Groq
             client = Groq(api_key=self.api_key)
-            prompt = build_analysis_prompt(site_context)
-            schema_json = json.dumps(AnalysisPayload.model_json_schema())
-            system_msg = (
-                f"{prompt}\n\n"
-                f"CONCISENESS REQUIREMENT:\n"
-                f"Be crisp, factual, and concise. Keep bullet points, summaries, and descriptions to 1-2 punchy sentences. "
-                f"Avoid verbose fluff. Ensure all 5 sections are populated completely within token bounds.\n\n"
-                f"STRICT SCHEMA REQUIREMENTS:\n"
-                f"You MUST return a JSON object with top-level keys 'brand' and 'analysis'.\n"
-                f"'analysis' MUST contain ALL FIVE sections:\n"
-                f"  1. 'competitor_analysis' (brand_overview, business_model, competitors, strengths, weaknesses, gaps, advantages, opportunities)\n"
-                f"  2. 'target_search_queries' (EXACTLY 5 query objects with query, platforms, intent, business_relevance, target_audience)\n"
-                f"  3. 'seo_improvements' (primary_keyword, secondary_keywords, long_tail_keywords, recommended_title, meta_description, etc.)\n"
-                f"  4. 'top_services' (between 1 and 5 service objects with name, description, target_industry, target_customer, main_benefit, source)\n"
-                f"  5. 'target_audience' (primary_audience, secondary_audience, industry_segments, business_types, customer_profiles, etc.)\n\n"
-                f"JSON Schema:\n{schema_json}"
+            evidence_summary = _format_groq_evidence(site_context)
+
+            prompt = (
+                "You are a Senior Website Business Analyst, SEO Strategist, and Competitive Intelligence Expert.\n"
+                "Analyze the website evidence below and generate a complete, rigorous, and assessment-grade JSON report.\n\n"
+                f"{evidence_summary}\n\n"
+                "CRITICAL REQUIREMENTS:\n"
+                "1. competitor_analysis: brand_overview, business_model, at least 3 relevant competitors (direct/indirect) "
+                "with strengths, weaknesses, verification_status ('verified' if confirmed on site, otherwise 'ai_suggested'), "
+                "brand_strengths, brand_weaknesses, competitive_gaps, competitive_advantages, opportunities.\n"
+                "2. target_search_queries: EXACTLY 5 search query objects (query, platforms, intent, business_relevance, target_audience).\n"
+                "3. seo_improvements: primary_keyword, secondary_keywords, long_tail_keywords, business_related_keywords, "
+                "recommended_title, meta_description, content_recommendations, on_page_improvements, technical_seo_suggestions.\n"
+                "4. top_services: 1 to 5 core services (name, description, target_industry, target_customer, main_benefit, source).\n"
+                "5. target_audience: primary_audience, secondary_audience, industry_segments, business_types, customer_profiles, "
+                "geographic_markets, customer_needs, customer_interests, marketing_segments, targeting_opportunities, source_classification.\n"
+                "6. Keep summaries, descriptions, and bullet points concise (1-2 sentences each). Do NOT omit any section.\n\n"
+                f"Adhere strictly to this JSON structure:\n{GROQ_SCHEMA_SKELETON}"
             )
 
             completion = client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": system_msg},
-                    {
-                        "role": "user",
-                        "content": (
-                            "Analyze the website crawl evidence and produce the complete JSON report. "
-                            "Ensure none of the 5 analysis sections are omitted."
-                        ),
-                    },
+                    {"role": "user", "content": prompt},
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
-                max_tokens=3000,
+                max_tokens=3500,
             )
         except Exception as exc:
             raise LLMServiceError(f"Groq API request failed ({type(exc).__name__}): {exc}") from exc
