@@ -189,15 +189,33 @@ pip install -r requirements.txt
 
 ## 7. Environment Configuration
 
-Copy `.env.example` to create `.env`:
+Copy `.env.example` to create your local `.env`:
 ```powershell
+# Windows PowerShell:
 Copy-Item .env.example .env
+
+# macOS / Linux Bash:
+cp .env.example .env
 ```
 
-Edit `.env` and supply your Gemini API key (obtainable freely from [Google AI Studio](https://aistudio.google.com/)):
+LinkScope AI features dual LLM provider support (**Google Gemini** or **Groq LPU**). Configure your chosen provider in `.env`:
 
+### Option A: Using Groq (Ultra-Fast LPU Provider)
 ```ini
-# LLM Configuration
+LLM_PROVIDER=groq
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_MODEL=openai/gpt-oss-20b
+
+# Crawler and Security Limits
+REQUEST_TIMEOUT_SECONDS=15
+MAX_PAGES=5
+MAX_CONTENT_CHARS=24000
+MAX_RESPONSE_BYTES=2097152
+MAX_REDIRECTS=5
+```
+
+### Option B: Using Google Gemini (Default Official Provider)
+```ini
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_api_key_here
 GEMINI_MODEL=gemini-2.0-flash
@@ -214,17 +232,56 @@ MAX_REDIRECTS=5
 
 ## 8. How to Run Locally
 
-Start the development server with Uvicorn:
+### Start the Backend Server
+
+Execute Uvicorn using the project's virtual environment:
 
 ```powershell
+# Windows PowerShell (using the project venv):
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+# macOS / Linux:
+source .venv/bin/activate
 uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-Access the service:
-- **Interactive OpenAPI Documentation**: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
-- **ReDoc Alternative Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **Visual Presentation Demo UI (Bonus)**: [http://127.0.0.1:8000/demo](http://127.0.0.1:8000/demo)
+Once started, the Uvicorn terminal will output:
+```
+INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Started reloader process
+INFO:     Application startup complete.
+```
+
+---
+
+## 8.1 How to View & Test the Application
+
+### 1. Interactive Swagger OpenAPI Documentation (Primary Interface)
+Open in your browser:  
+👉 **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
+
+- Click on **`POST /link-analysis`** &rarr; **Try it out**.
+- Enter a public URL (e.g., `{"url": "https://www.studearning.tech/"}`).
+- Click **Execute** to view status codes, full response schemas, and execution latency.
+
+### 2. Visual Interactive Presentation Dashboard (Live Demo)
+Open in your browser:  
+👉 **[http://127.0.0.1:8000/demo](http://127.0.0.1:8000/demo)** *(or double-click `demo.html` in your project folder)*
+
+- Provides a clean, modern UI for evaluator walkthroughs and presentations.
+- Includes pre-configured preset buttons (`studearning.tech`, `stripe.com`, `github.com`).
+- Visually formats the 5 assessment sections:
+  1. **Competitor Analysis Cards** (with AI verification badges, brand gaps & opportunities)
+  2. **Top 5 Target Search Queries Table** (Intent, audience, platforms)
+  3. **SEO Audit & Keywords** (Title tags, meta descriptions, on-page suggestions)
+  4. **Top 5 Services** (With target customer & ROI benefits)
+  5. **Target Audience Segments** (Decision makers, pain points, verticals)
+  6. **Raw JSON Inspector** with complete Pydantic payload verification.
+
+### 3. Service Health & Alternative Documentation
 - **Service Health Probe**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
+- **API Root**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
 
 ---
 

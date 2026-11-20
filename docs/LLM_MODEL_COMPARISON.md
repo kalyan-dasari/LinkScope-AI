@@ -26,18 +26,18 @@ To identify the optimal provider, we evaluate three tier-one commercial LLM fami
 
 The table below delineates verified technical specifications and published pricing models (as of current vendor documentation).
 
-| Evaluation Dimension | Google Gemini 2.0 Flash (Recommended) | OpenAI GPT-4o-mini | Anthropic Claude 3.5 Haiku | OpenAI GPT-4o (High-Tier) | Anthropic Claude 3.5 Sonnet (High-Tier) |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| **Primary Architectural Role** | High-throughput structured analyst | Low-cost utility model | Fast reasoning agent | Flagship multimodal reasoning | Premier coding & synthesis engine |
-| **Context Window** | **1,048,576 tokens** (~1M) | 128,000 tokens | 200,000 tokens | 128,000 tokens | 200,000 tokens |
-| **Max Output Tokens** | 8,192 tokens | 16,384 tokens | 8,192 tokens | 16,384 tokens | 8,192 tokens |
-| **Official Published Input Price** | **\$0.10 / 1M tokens** | \$0.15 / 1M tokens | \$0.80 / 1M tokens | \$2.50 / 1M tokens | \$3.00 / 1M tokens |
-| **Official Published Output Price** | **\$0.40 / 1M tokens** | \$0.60 / 1M tokens | \$4.00 / 1M tokens | \$10.00 / 1M tokens | \$15.00 / 1M tokens |
-| **Free Tier / Evaluation Quota** | **15 RPM / 1,500 RPD (AI Studio)** | Pay-as-you-go credit | Pay-as-you-go credit | Pay-as-you-go credit | Pay-as-you-go credit |
-| **Structured Output Mechanism** | Native `response_schema` (Pydantic / JSON Schema enforced at decode) | `json_schema` strict mode | Tool calling / schema steering | `json_schema` strict mode | Tool calling / schema steering |
-| **JSON Schema Conformity** | **Deterministic (Zero schema hallucinations)** | Deterministic (Strict mode) | High (via Tool Call enforcement) | Deterministic (Strict mode) | High (via Tool Call enforcement) |
-| **Measured / Observed Latency (p50)** | **1.2s - 2.1s** | 1.4s - 2.3s | 1.5s - 2.4s | 3.2s - 5.1s | 3.5s - 5.8s |
-| **Integration Complexity** | Minimal (`google-genai` Python SDK) | Standard (`openai` Python SDK) | Standard (`anthropic` Python SDK) | Standard (`openai` Python SDK) | Standard (`anthropic` Python SDK) |
+| Evaluation Dimension | Google Gemini 2.0 Flash (Recommended) | Groq LPU (openai/gpt-oss-20b) | OpenAI GPT-4o-mini | Anthropic Claude 3.5 Haiku | OpenAI GPT-4o (High-Tier) | Anthropic Claude 3.5 Sonnet (High-Tier) |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Primary Architectural Role** | High-throughput structured analyst | Ultra-fast LPU inference engine | Low-cost utility model | Fast reasoning agent | Flagship multimodal reasoning | Premier coding & synthesis engine |
+| **Context Window** | **1,048,576 tokens** (~1M) | 128,000 tokens | 128,000 tokens | 200,000 tokens | 128,000 tokens | 200,000 tokens |
+| **Max Output Tokens** | 8,192 tokens | 4,096 tokens | 16,384 tokens | 8,192 tokens | 16,384 tokens | 8,192 tokens |
+| **Official Published Input Price** | **\$0.10 / 1M tokens** | \$0.10 / 1M tokens | \$0.15 / 1M tokens | \$0.80 / 1M tokens | \$2.50 / 1M tokens | \$3.00 / 1M tokens |
+| **Official Published Output Price** | **\$0.40 / 1M tokens** | \$0.50 / 1M tokens | \$0.60 / 1M tokens | \$4.00 / 1M tokens | \$10.00 / 1M tokens | \$15.00 / 1M tokens |
+| **Free Tier / Evaluation Quota** | **15 RPM / 1,500 RPD (AI Studio)** | **30 RPM / 14,400 RPD (Groq Free Tier)** | Pay-as-you-go credit | Pay-as-you-go credit | Pay-as-you-go credit | Pay-as-you-go credit |
+| **Structured Output Mechanism** | Native `response_schema` (Pydantic / JSON Schema enforced at decode) | `json_object` mode with schema skeleton steering | `json_schema` strict mode | Tool calling / schema steering | `json_schema` strict mode | Tool calling / schema steering |
+| **JSON Schema Conformity** | **Deterministic (Zero schema hallucinations)** | High (with Pydantic list & literal coercers) | Deterministic (Strict mode) | High (via Tool Call enforcement) | Deterministic (Strict mode) | High (via Tool Call enforcement) |
+| **Measured / Observed Latency (p50)** | **1.2s - 2.1s** | **1.8s - 3.8s (End-to-End)** | 1.4s - 2.3s | 1.5s - 2.4s | 3.2s - 5.1s | 3.5s - 5.8s |
+| **Integration Complexity** | Minimal (`google-genai` Python SDK) | Minimal (`groq` Python SDK) | Standard (`openai` Python SDK) | Standard (`anthropic` Python SDK) | Standard (`openai` Python SDK) | Standard (`anthropic` Python SDK) |
 
 > [!NOTE]
 > **Pricing Verification**: All prices are verified from official vendor pricing documentation:

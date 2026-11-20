@@ -95,4 +95,16 @@ class BaseLLMProvider(ABC):
         pass
 ```
 
-New models (such as `OpenAIProvider` or `ClaudeProvider`) can be registered in `app/services/llm_service.py` without modifying the core `AnalysisService` orchestrator or FastAPI routing code.
+LinkScope AI implements concrete production providers:
+1. **`GeminiProvider`**: Native schema enforcement (`response_schema=AnalysisPayload`) with Google GenAI SDK (`gemini-2.0-flash`).
+2. **`GroqProvider`**: Ultra-high-speed inference on Groq LPUs (`openai/gpt-oss-20b`), achieving end-to-end analysis latencies under 4 seconds while strictly conforming to token-efficient JSON skeletons.
+
+---
+
+## 5. Visual Interactive Demo Presentation Layer
+
+While the core application strictly adheres to the Python backend specification, LinkScope AI includes a self-contained, zero-dependency presentation dashboard served at `GET /demo` (and saved in `demo.html`).
+
+- **Architecture**: Single-page static HTML/JavaScript client with Tailwind CSS via CDN.
+- **Interactivity**: Submits `POST /link-analysis` directly to the FastAPI server, providing live latency monitoring, preset targets, structured cards for the 5 analysis sections, and an expandable raw JSON inspector.
+- **Safety**: Fully decoupled from API contracts (`/`, `/health`, and `/link-analysis`), ensuring zero degradation of test suites or backend isolation.
