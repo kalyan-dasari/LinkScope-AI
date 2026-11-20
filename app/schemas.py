@@ -74,6 +74,16 @@ class CompetitorAnalysis(BaseModel):
     def coerce_lists(cls, v: object) -> list[str]:
         return _coerce_str_list(v)
 
+    @field_validator("competitors", mode="before")
+    @classmethod
+    def filter_competitors(cls, v: object) -> list[object]:
+        if isinstance(v, list):
+            return [
+                item for item in v
+                if (isinstance(item, dict) and item.get("name")) or hasattr(item, "name")
+            ]
+        return v
+
 # --- SECTION 2: TOP FIVE TARGET SEARCH QUERIES ---
 
 class SearchQuery(BaseModel):
@@ -199,6 +209,26 @@ class AnalysisSections(BaseModel):
         description="Between 1 and 5 top services or products",
     )
     target_audience: TargetAudience
+
+    @field_validator("target_search_queries", mode="before")
+    @classmethod
+    def filter_queries(cls, v: object) -> list[object]:
+        if isinstance(v, list):
+            return [
+                item for item in v
+                if (isinstance(item, dict) and item.get("query")) or hasattr(item, "query")
+            ]
+        return v
+
+    @field_validator("top_services", mode="before")
+    @classmethod
+    def filter_services(cls, v: object) -> list[object]:
+        if isinstance(v, list):
+            return [
+                item for item in v
+                if (isinstance(item, dict) and item.get("name")) or hasattr(item, "name")
+            ]
+        return v
 
 class BrandInfo(BaseModel):
     name: str = Field(description="Brand or company name")
