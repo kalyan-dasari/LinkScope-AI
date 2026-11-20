@@ -40,6 +40,16 @@ class Competitor(BaseModel):
     def coerce_lists(cls, v: object) -> list[str]:
         return _coerce_str_list(v)
 
+    @field_validator("verification_status", mode="before")
+    @classmethod
+    def coerce_verification_status(cls, v: object) -> str:
+        s = str(v).lower()
+        if "verif" in s:
+            return "verified"
+        if "unknown" in s:
+            return "unknown"
+        return "ai_suggested"
+
 class CompetitorAnalysis(BaseModel):
     brand_overview: str = Field(description="High-level positioning and market category overview")
     business_model: str | None = Field(default=None, description="Identified or inferred business model (e.g. B2B SaaS, Marketplace)")
@@ -112,7 +122,7 @@ class ServiceInsight(BaseModel):
     target_industry: list[str] = Field(default_factory=list, description="Target vertical industries")
     target_customer: list[str] = Field(default_factory=list, description="Target customer segment / persona")
     main_benefit: str = Field(description="Primary value proposition or ROI outcome")
-    source: Literal["extracted", "inferred", "website"] = Field(
+    source: Literal["extracted", "inferred", "website", "website_content"] = Field(
         default="extracted",
         description="Whether explicitly extracted from website text or inferred from broader messaging",
     )
@@ -121,6 +131,14 @@ class ServiceInsight(BaseModel):
     @classmethod
     def coerce_lists(cls, v: object) -> list[str]:
         return _coerce_str_list(v)
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def coerce_source(cls, v: object) -> str:
+        s = str(v).lower()
+        if "infer" in s:
+            return "inferred"
+        return "extracted"
 
 # --- SECTION 5: TARGET AUDIENCE ---
 
@@ -157,6 +175,14 @@ class TargetAudience(BaseModel):
     def coerce_lists(cls, v: object) -> list[str]:
         return _coerce_str_list(v)
 
+    @field_validator("source_classification", mode="before")
+    @classmethod
+    def coerce_source_classification(cls, v: object) -> str:
+        s = str(v).lower()
+        if "confirm" in s or "verif" in s or "site" in s:
+            return "website_confirmed"
+        return "inferred"
+
 # --- COMPOSITE SCHEMAS ---
 
 class AnalysisSections(BaseModel):
@@ -179,6 +205,14 @@ class BrandInfo(BaseModel):
     category: str = Field(description="Industry or market category")
     summary: str = Field(description="Concise description of what the company does")
     source: Literal["website_content", "inferred"] = Field(default="website_content")
+
+    @field_validator("source", mode="before")
+    @classmethod
+    def coerce_brand_source(cls, v: object) -> str:
+        s = str(v).lower()
+        if "infer" in s:
+            return "inferred"
+        return "website_content"
 
 class Metadata(BaseModel):
     pages_analyzed: int = Field(description="Total pages crawled and evaluated")
