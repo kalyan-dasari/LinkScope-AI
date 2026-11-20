@@ -11,7 +11,7 @@ from app.schemas import (
     ServiceInsight,
     TargetAudience,
 )
-from app.services.llm_service import analyze_content
+from app.services.llm_service import analyze_content, get_llm_provider, GeminiProvider, GroqProvider
 
 def _generate_valid_payload():
     dummy_query = SearchQuery(
@@ -67,8 +67,9 @@ def _generate_valid_payload():
 
 def test_analyze_content_raises_when_no_api_key():
     with patch("app.services.llm_service.settings.gemini_api_key", ""):
-        with pytest.raises(LLMConfigError):
-            analyze_content({"website": "https://example.com", "pages": []})
+        with patch("app.services.llm_service.settings.groq_api_key", ""):
+            with pytest.raises(LLMConfigError):
+                analyze_content({"website": "https://example.com", "pages": []})
 
 def test_analyze_content_success_with_mocked_gemini():
     payload_obj = _generate_valid_payload()
@@ -85,3 +86,23 @@ def test_analyze_content_success_with_mocked_gemini():
             assert result.brand.name == "TestBrand"
             assert len(result.analysis.target_search_queries) == 5
             assert result.analysis.seo_improvements.primary_keyword == "ai agents"
+
+def test_analyze_content_success_with_mocked_groq():
+    payload_obj = _generate_valid_payload()
+    json_str = payload_obj.model_dump_json()
+
+    mock_client = MagicMock()
+    mock_choice = MagicMock()
+    mock_choice.message.content = json_str
+    mock_completion = MagicMock()
+    mock_completion.choices = [mock_choice]
+    mock_client.chat.completions.create.return_value = mock_completion
+
+    with patch("app.services.llm_service.settings.llm_provider", "groq"):
+        with patch("app.services.llm_service.settings.groq_api_key", "gsk_mock_groq_key"):
+            with patch("groq.Groq", return_value=mock_client):
+                provider = get_llm_provider()
+                assert isinstance(provider, GroqProvider)
+                result = provider.analyze({"website": "https://example.com", "pages": []})
+                assert result.brand.name == "TestBrand"
+                assert len(result.analysis.target_search_queries) == 5
