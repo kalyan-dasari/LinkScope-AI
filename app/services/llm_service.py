@@ -61,7 +61,7 @@ class GeminiProvider(BaseLLMProvider):
             raise LLMServiceError(f"LLM output failed schema validation: {exc}") from exc
 
 class GroqProvider(BaseLLMProvider):
-    """Groq LPU provider running high-speed open-weights models (e.g. Llama 3.3 70B Versatile)."""
+    """Groq LPU provider running high-speed models (e.g. openai/gpt-oss-120b)."""
 
     def __init__(self, api_key: str | None = None, model: str | None = None):
         self.api_key = api_key or settings.groq_api_key
@@ -80,7 +80,15 @@ class GroqProvider(BaseLLMProvider):
             schema_json = json.dumps(AnalysisPayload.model_json_schema(), indent=2)
             system_msg = (
                 f"{prompt}\n\n"
-                f"CRITICAL: Output ONLY valid JSON matching this schema exactly:\n{schema_json}"
+                f"STRICT SCHEMA REQUIREMENTS:\n"
+                f"You MUST return a JSON object with top-level keys 'brand' and 'analysis'.\n"
+                f"'analysis' MUST contain ALL FIVE sections:\n"
+                f"  1. 'competitor_analysis' (with brand_overview, business_model, competitors, strengths, weaknesses, gaps, advantages, opportunities)\n"
+                f"  2. 'target_search_queries' (EXACTLY 5 query objects with query, platforms, intent, business_relevance, target_audience)\n"
+                f"  3. 'seo_improvements' (with primary_keyword, secondary_keywords, long_tail_keywords, recommended_title, meta_description, etc.)\n"
+                f"  4. 'top_services' (list of 1 to 5 service objects with name, description, target_industry, target_customer, main_benefit, source)\n"
+                f"  5. 'target_audience' (with primary_audience, secondary_audience, industry_segments, business_types, customer_profiles, etc.)\n\n"
+                f"JSON Schema:\n{schema_json}"
             )
 
             completion = client.chat.completions.create(
@@ -89,11 +97,15 @@ class GroqProvider(BaseLLMProvider):
                     {"role": "system", "content": system_msg},
                     {
                         "role": "user",
-                        "content": "Extract and produce the complete LinkScope analysis JSON report for this website evidence.",
+                        "content": (
+                            "Analyze the website evidence and produce the complete JSON report. "
+                            "Ensure none of the 5 analysis sections are omitted."
+                        ),
                     },
                 ],
                 response_format={"type": "json_object"},
                 temperature=0.2,
+                max_tokens=4096,
             )
         except Exception as exc:
             raise LLMServiceError(f"Groq API request failed ({type(exc).__name__}): {exc}") from exc
