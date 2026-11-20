@@ -295,6 +295,21 @@
     const errorMessage = document.getElementById('errorMessage');
     const resultsWrapper = document.getElementById('resultsWrapper');
 
+    // Automatically detect running mode:
+    // If opened via file:/// (double-clicking the HTML file), target http://127.0.0.1:8000
+    // If served via FastAPI (http://127.0.0.1:8000/demo), use relative path
+    const isFileProtocol = window.location.protocol === 'file:' || !window.location.host;
+    const API_BASE = isFileProtocol ? 'http://127.0.0.1:8000' : '';
+    const API_URL = `${API_BASE}/link-analysis`;
+
+    // Fix header links if opened via file://
+    if (isFileProtocol) {
+      const docLink = document.querySelector('a[href="/docs"]');
+      const healthLink = document.querySelector('a[href="/health"]');
+      if (docLink) docLink.href = 'http://127.0.0.1:8000/docs';
+      if (healthLink) healthLink.href = 'http://127.0.0.1:8000/health';
+    }
+
     // Preset click handlers
     document.querySelectorAll('.preset-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -316,13 +331,23 @@
       resultsWrapper.classList.add('hidden');
 
       try {
-        const response = await fetch('/link-analysis', {
+        const response = await fetch(API_URL, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({ url })
         });
 
-        const data = await response.json();
+        const rawText = await response.text();
+        let data = {};
+        if (rawText && rawText.trim()) {
+          try {
+            data = JSON.parse(rawText);
+          } catch (jsonErr) {
+            throw new Error(`Server returned non-JSON response (${response.status}): ${rawText.slice(0, 200)}`);
+          }
+        } else {
+          throw new Error(`Server returned an empty response with HTTP status ${response.status}. Please check if the backend is running.`);
+        }
 
         if (!response.ok) {
           throw new Error(data.detail || `Server returned HTTP ${response.status}`);
@@ -331,7 +356,14 @@
         renderResults(data);
       } catch (err) {
         errorBox.classList.remove('hidden');
-        errorMessage.textContent = err.message || 'An unexpected error occurred during link analysis.';
+        if (err.name === 'TypeError' || (err.message && err.message.toLowerCase().includes('failed to fetch'))) {
+          errorMessage.innerHTML = `<strong>Backend Unreachable:</strong> Could not connect to <code>${API_URL}</code>.<br><br>` +
+            `Please ensure your FastAPI backend is running locally in your terminal:<br>` +
+            `<code class="inline-block mt-1 px-2 py-1 bg-slate-900 border border-slate-700 rounded text-indigo-300">` +
+            `.\\.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --port 8000</code>`;
+        } else {
+          errorMessage.textContent = err.message || 'An unexpected error occurred during link analysis.';
+        }
       } finally {
         submitBtn.disabled = false;
         btnText.textContent = 'Analyze Link';
