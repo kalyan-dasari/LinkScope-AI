@@ -44,8 +44,23 @@ def _extract_page(html: str, url: str) -> dict:
 
     # Prioritize main semantic content block
     main = soup.find("main") or soup.find("article") or soup.body or soup
-    text = " ".join(main.stripped_strings)
-    text = " ".join(text.split())
+    body_text = " ".join(main.stripped_strings) if main else ""
+    body_text = " ".join(body_text.split())
+
+    # Build comprehensive textual content: combine metadata and body text.
+    # This ensures modern SPAs (React/Vue/Vite) with empty body shells but rich
+    # titles and meta descriptions can still be understood and analyzed.
+    content_blocks = []
+    if title:
+        content_blocks.append(f"Title: {title}")
+    if description:
+        content_blocks.append(f"Meta Description: {description}")
+    if headings:
+        content_blocks.append("Headings: " + " | ".join(headings))
+    if body_text:
+        content_blocks.append(body_text)
+
+    combined_text = "\n".join(content_blocks) if content_blocks else body_text
 
     links = []
     base_netloc = urlparse(url).netloc.lower()
@@ -65,7 +80,7 @@ def _extract_page(html: str, url: str) -> dict:
         "title": title,
         "meta_description": description,
         "headings": headings[:40],
-        "text": text[:settings.max_content_chars],
+        "text": combined_text[:settings.max_content_chars],
         "internal_links": links[:100],
     }
 
