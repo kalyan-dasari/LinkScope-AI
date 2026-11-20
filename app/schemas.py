@@ -7,57 +7,85 @@ class LinkAnalysisRequest(BaseModel):
         examples=["https://example.com"],
     )
 
+# --- SECTION 1: COMPETITOR VS BRAND ANALYSIS ---
+
 class Competitor(BaseModel):
     name: str = Field(description="Name of the competing business or platform")
     website: str | None = Field(default=None, description="Known or inferred website URL of the competitor")
+    description: str = Field(default="", description="Summary of the competitor's core offerings and positioning")
     strengths: list[str] = Field(default_factory=list, description="Key competitor strengths")
-    weaknesses_or_gaps: list[str] = Field(default_factory=list, description="Competitor weaknesses or market gaps")
+    weaknesses: list[str] = Field(default_factory=list, description="Competitor weaknesses or operational gaps")
     verification_status: Literal["verified", "ai_suggested", "unknown"] = Field(
         default="ai_suggested",
-        description="Verified if found in source text, ai_suggested if inferred from domain knowledge",
+        description="Verified if confirmed in evidence, ai_suggested from domain knowledge, unknown if uncertain",
     )
     notes: str | None = Field(default=None, description="Contextual notes on competitive overlap")
 
 class CompetitorAnalysis(BaseModel):
     brand_overview: str = Field(description="High-level positioning and market category overview")
-    competitors: list[Competitor] = Field(default_factory=list, description="List of direct and indirect competitors")
+    business_model: str | None = Field(default=None, description="Identified or inferred business model (e.g. B2B SaaS, Marketplace)")
+    main_products_or_services: list[str] = Field(default_factory=list, description="Primary products or services offered by the brand")
+    competitors: list[Competitor] = Field(default_factory=list, description="List of at least 3 relevant direct/indirect competitors")
     brand_strengths: list[str] = Field(default_factory=list, description="Core strengths of the analyzed brand")
-    competitive_advantages: list[str] = Field(default_factory=list, description="Unique differentiators and moats")
-    opportunities: list[str] = Field(default_factory=list, description="Market opportunities and underserved needs")
+    brand_weaknesses: list[str] = Field(default_factory=list, description="Noticeable gaps, missing proofs, or weaknesses")
+    competitive_gaps: list[str] = Field(default_factory=list, description="Market areas where competitors outperform or have an edge")
+    competitive_advantages: list[str] = Field(default_factory=list, description="Unique differentiators, moats, and USPs")
+    opportunities: list[str] = Field(default_factory=list, description="Underserved market needs or strategic growth avenues")
+
+# --- SECTION 2: TOP FIVE TARGET SEARCH QUERIES ---
 
 class SearchQuery(BaseModel):
-    query: str = Field(description="High-intent search query")
-    platforms: list[str] = Field(default_factory=list, description="Platforms relevant to this query (e.g. Google, LinkedIn, X)")
+    query: str = Field(description="High-intent target search query")
+    platforms: list[str] = Field(default_factory=list, description="Recommended discovery platforms (e.g. Google, LinkedIn, X, YouTube)")
     intent: str = Field(description="Search intent: Informational, Commercial, Transactional, Navigational")
-    business_relevance: str = Field(description="Why this query matters for customer acquisition or retention")
-    target_audience: str = Field(description="The customer persona conducting this search")
+    business_relevance: str = Field(description="Relevance to customer acquisition, pipeline growth, or retention")
+    target_audience: str = Field(description="The specific buyer persona or user conducting this search")
+
+# --- SECTION 3: SEO RECOMMENDATIONS ---
 
 class SEOImprovements(BaseModel):
     primary_keyword: str = Field(description="Single highest-priority target keyword")
     secondary_keywords: list[str] = Field(default_factory=list, description="Supporting commercial and topical keywords")
-    long_tail_keywords: list[str] = Field(default_factory=list, description="Longer, niche, low-competition phrases")
-    recommended_title: str = Field(description="Recommended HTML title tag (50-60 chars)")
+    long_tail_keywords: list[str] = Field(default_factory=list, description="Longer, niche, low-competition query variations")
+    business_related_keywords: list[str] = Field(default_factory=list, description="Industry and vertical-specific business keywords")
+    recommended_title: str = Field(description="Recommended HTML title tag (50-60 chars, distinguishing from current)")
     meta_description: str = Field(description="Recommended HTML meta description (140-160 chars)")
-    supporting_content: list[str] = Field(default_factory=list, description="Recommended blog topics or content hub pages")
+    content_recommendations: list[str] = Field(default_factory=list, description="Recommended topic clusters, guides, or content hub pages")
+    on_page_improvements: list[str] = Field(default_factory=list, description="Actionable on-page optimizations (heading structure, CTAs)")
+    technical_seo_suggestions: list[str] = Field(default_factory=list, description="Evidence-backed technical SEO improvements")
+
+# --- SECTION 4: TOP FIVE SERVICES ---
 
 class ServiceInsight(BaseModel):
     name: str = Field(description="Name of service or core product feature")
     description: str = Field(description="Detailed overview of what the service delivers")
     target_industry: list[str] = Field(default_factory=list, description="Target vertical industries")
-    target_customer: list[str] = Field(default_factory=list, description="Target customer segment")
+    target_customer: list[str] = Field(default_factory=list, description="Target customer segment / persona")
     main_benefit: str = Field(description="Primary value proposition or ROI outcome")
-    source: Literal["website", "inferred"] = Field(default="website", description="Whether explicitly listed or inferred")
+    source: Literal["extracted", "inferred", "website"] = Field(
+        default="extracted",
+        description="Whether explicitly extracted from website text or inferred from broader messaging",
+    )
+
+# --- SECTION 5: TARGET AUDIENCE ---
 
 class TargetAudience(BaseModel):
-    primary_audience: list[str] = Field(default_factory=list, description="Core decision-makers and buyers")
-    secondary_audience: list[str] = Field(default_factory=list, description="Influencers, end-users, or tertiary beneficiaries")
-    industries: list[str] = Field(default_factory=list, description="Target industry verticals")
+    primary_audience: list[str] = Field(default_factory=list, description="Core decision-makers and economic buyers")
+    secondary_audience: list[str] = Field(default_factory=list, description="Influencers, end-users, or technical evaluators")
+    industry_segments: list[str] = Field(default_factory=list, description="Target industry verticals")
     business_types: list[str] = Field(default_factory=list, description="Target business types (e.g. B2B, B2C, SMB, Enterprise)")
-    customer_profiles: list[str] = Field(default_factory=list, description="Archetypal customer personas")
-    geographical_focus: list[str] = Field(default_factory=list, description="Regional or geographic focus")
-    customer_needs: list[str] = Field(default_factory=list, description="Core problems or jobs-to-be-done")
-    interests: list[str] = Field(default_factory=list, description="Professional or consumer interests")
+    customer_profiles: list[str] = Field(default_factory=list, description="Detailed customer personas")
+    geographic_markets: list[str] = Field(default_factory=list, description="Regional or international geographic focus")
+    customer_needs: list[str] = Field(default_factory=list, description="Core customer pain points and jobs-to-be-done")
+    customer_interests: list[str] = Field(default_factory=list, description="Professional or consumer interests")
     marketing_segments: list[str] = Field(default_factory=list, description="Actionable marketing segments")
+    targeting_opportunities: list[str] = Field(default_factory=list, description="Recommended channels, positioning, or ABM strategies")
+    source_classification: Literal["website_confirmed", "inferred"] = Field(
+        default="inferred",
+        description="Whether audience details are directly confirmed on-site or inferred",
+    )
+
+# --- COMPOSITE SCHEMAS ---
 
 class AnalysisSections(BaseModel):
     competitor_analysis: CompetitorAnalysis
