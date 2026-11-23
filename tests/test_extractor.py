@@ -53,3 +53,19 @@ def test_choose_pages():
     assert len(candidates) <= 2
     assert "https://example.com/about" in candidates
     assert "https://example.com/services" in candidates
+
+def test_ssrf_safe_backend_blocks_private_ip():
+    import anyio
+    import pytest
+    from app.services.website_extractor import SSRFSafeBackend
+    from app.exceptions import InvalidUrlError
+
+    backend = SSRFSafeBackend()
+
+    async def _check():
+        with pytest.raises(InvalidUrlError):
+            await backend.connect_tcp("127.0.0.1", 80)
+        with pytest.raises(InvalidUrlError):
+            await backend.connect_tcp("169.254.169.254", 80)
+
+    anyio.run(_check)
