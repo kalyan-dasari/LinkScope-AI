@@ -1,7 +1,7 @@
-import os
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import JSONResponse
 from app.routes.analysis import router as analysis_router
 
 app = FastAPI(
@@ -16,14 +16,25 @@ app = FastAPI(
     redoc_url="/redoc",
 )
 
-# Enable CORS for public API deployment and cross-origin consumer access
+# Standard secure CORS configuration for public API access
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["*"],
 )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    """Maps client request format validation errors to HTTP 400 Bad Request."""
+    errors = exc.errors()
+    error_msg = errors[0].get("msg", "Invalid request body") if errors else "Invalid request body"
+    field_loc = errors[0].get("loc", ["request"])[-1] if errors else "request"
+    return JSONResponse(
+        status_code=400,
+        content={"detail": f"Invalid {field_loc}: {error_msg}"},
+    )
 
 app.include_router(analysis_router)
 
@@ -41,8 +52,3 @@ async def root():
 @app.get("/health", tags=["General"], summary="Service Health Probe")
 async def health():
     return {"status": "ok", "service": "LinkScope AI"}
-
-@app.get("/demo", summary="Interactive Visual Demo UI", include_in_schema=False)
-async def demo():
-    html_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "demo.html")
-    return FileResponse(html_path)

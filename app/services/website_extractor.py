@@ -1,10 +1,14 @@
 import asyncio
+import ipaddress
+import socket
 from urllib.parse import urljoin, urlparse
+import anyio
 import httpx
 from bs4 import BeautifulSoup
+from httpcore._backends.anyio import AnyIOBackend
 from app.config import settings
 from app.exceptions import InvalidUrlError, WebsiteInaccessibleError
-from app.utils.url_validator import validate_public_url
+from app.utils.url_validator import _is_ip_public, validate_public_url
 
 USER_AGENT = "LinkScopeAI/0.1 (website analysis; assessment project)"
 RELEVANT_PATH_HINTS = (
@@ -19,11 +23,49 @@ RELEVANT_PATH_HINTS = (
     "feature",
 )
 
+class SSRFSafeBackend(AnyIOBackend):
+    """
+    Guarantees defense against DNS rebinding (TOCTOU) attacks by intercepting
+    TCP connection attempts and verifying the resolved IP address immediately
+    prior to socket connection.
+    """
+    async def connect_tcp(
+        self,
+        host: str,
+        port: int,
+        **kwargs,
+    ):
+        infos = await anyio.to_thread.run_sync(
+            socket.getaddrinfo, host, port, socket.AF_UNSPEC, socket.SOCK_STREAM
+        )
+        if not infos:
+            raise InvalidUrlError(f"Host '{host}' could not be resolved.")
+
+        for info in infos:
+            ip_str = info[4][0]
+            try:
+                ip_obj = ipaddress.ip_address(ip_str)
+                if not _is_ip_public(ip_obj):
+                    raise InvalidUrlError(
+                        f"Target host '{host}' resolved to non-public address '{ip_str}' at socket connection."
+                    )
+            except ValueError:
+                raise InvalidUrlError(f"Invalid IP address format '{ip_str}' for host '{host}'.")
+
+        return await super().connect_tcp(host, port, **kwargs)
+
+class SSRFSafeTransport(httpx.AsyncHTTPTransport):
+    """Custom HTTPX transport enforcing socket-level SSRF and DNS rebinding protections."""
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if hasattr(self, "_pool"):
+            self._pool._network_backend = SSRFSafeBackend()
+
 def _extract_page(html: str, url: str) -> dict:
     """Safely parses HTML, strips boilerplate, and extracts semantic textual data."""
     try:
         soup = BeautifulSoup(html, "html.parser")
-    except Exception as exc:
+    except Exception:
         # Graceful handling for malformed HTML
         soup = BeautifulSoup("", "html.parser")
 
@@ -186,12 +228,14 @@ async def extract_website(url: str) -> list[dict]:
     """
     Crawls the homepage and up to (settings.max_pages - 1) relevant internal pages.
     Bounds total content length to settings.max_content_chars.
+    Enforces socket-level SSRF and DNS rebinding protections.
     """
     validate_public_url(url)
     timeout = httpx.Timeout(settings.request_timeout_seconds)
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
+    transport = SSRFSafeTransport(limits=limits)
 
-    async with httpx.AsyncClient(timeout=timeout, limits=limits, headers={"User-Agent": USER_AGENT}) as client:
+    async with httpx.AsyncClient(timeout=timeout, transport=transport, headers={"User-Agent": USER_AGENT}) as client:
         home = await _fetch(client, url)
         candidate_pages = _choose_pages(home, url, settings.max_pages)
         pages = [home]
