@@ -12,7 +12,7 @@ Returns API metadata, version, and links to interactive Swagger documentation.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/"
+curl -X GET "http://127.0.0.1:4000/"
 ```
 
 **Response (200 OK):**
@@ -34,7 +34,7 @@ Kubernetes and container orchestrator liveness/readiness probe.
 
 **Request:**
 ```bash
-curl -X GET "http://127.0.0.1:8000/health"
+curl -X GET "http://127.0.0.1:4000/health"
 ```
 
 **Response (200 OK):**
@@ -53,7 +53,7 @@ curl -X GET "http://127.0.0.1:8000/health"
 
 **Request:**
 ```bash
-curl -X POST "http://127.0.0.1:8000/link-analysis" \
+curl -X POST "http://127.0.0.1:4000/link-analysis" \
      -H "Content-Type: application/json" \
      -d '{"url": "https://stripe.com"}'
 ```
@@ -313,7 +313,7 @@ curl -X POST "http://127.0.0.1:8000/link-analysis" \
 
 **Request:**
 ```bash
-curl -X POST "http://127.0.0.1:8000/link-analysis" \
+curl -X POST "http://127.0.0.1:4000/link-analysis" \
      -H "Content-Type: application/json" \
      -d '{"url": "http://192.168.1.1"}'
 ```
@@ -332,7 +332,7 @@ curl -X POST "http://127.0.0.1:8000/link-analysis" \
 
 **Request:**
 ```bash
-curl -X POST "http://127.0.0.1:8000/link-analysis" \
+curl -X POST "http://127.0.0.1:4000/link-analysis" \
      -H "Content-Type: application/json" \
      -d '{"url": "https://blank-spa.example.com"}'
 ```
@@ -351,7 +351,7 @@ curl -X POST "http://127.0.0.1:8000/link-analysis" \
 
 **Request:**
 ```bash
-curl -X POST "http://127.0.0.1:8000/link-analysis" \
+curl -X POST "http://127.0.0.1:4000/link-analysis" \
      -H "Content-Type: application/json" \
      -d '{"url": "https://this-domain-does-not-exist-at-all-xyz.com"}'
 ```
