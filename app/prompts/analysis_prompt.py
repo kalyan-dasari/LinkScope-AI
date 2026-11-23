@@ -12,33 +12,43 @@ CORE PRINCIPLES & CONSTRAINTS:
 
 DETAILED SECTION GUIDELINES:
 
-SECTION 1: COMPETITOR VS BRAND ANALYSIS
-- Brand Profile: Extract the brand name, a comprehensive brand overview, industry category, main products or services, and identifiable business model (e.g. B2B Enterprise SaaS, D2C E-commerce, Marketplace, Agency).
+SECTION 1: COMPETITOR VS BRAND DETAILS
+- Brand Profile: Extract the brand name (brand_name), a comprehensive business overview (brand_overview / business_overview), main business category (industry_category / main_business_category), main products and services (main_products_or_services), and business model.
 - Competitors: Identify at least 3 relevant direct or indirect competitors based on domain and market knowledge. For each competitor, provide:
   * name, website URL (if known), description of their core offering.
-  * key competitor strengths and key competitor weaknesses.
+  * key competitor strengths and key competitor weaknesses or gaps.
   * verification_status: mark as "verified" ONLY if the competitor is explicitly mentioned or compared on the analyzed website; otherwise mark as "ai_suggested"; use "unknown" if uncertain.
   * notes explaining competitive positioning overlap.
-- Brand Evaluation: Outline brand strengths, brand weaknesses (e.g. missing social proof, unclear pricing, sparse technical docs), competitive gaps (areas where competitors lead), competitive advantages (unique moats or differentiators), and business growth opportunities.
+- Brand Evaluation: Outline brand strengths, brand weaknesses, competitive gaps (areas where competitors lead), your brand's competitive advantages (competitive_advantages), and strategic opportunities to improve market positioning (opportunities).
 
-SECTION 2: TOP FIVE TARGET SEARCH QUERIES
-- Provide EXACTLY 5 high-impact, commercial/transactional/informational search queries relevant to the brand's offerings.
-- For each query: specify the query text, search intent (Informational, Commercial, Transactional, Navigational), business relevance to customer pipeline, specific target audience persona, and recommended platforms (Google, LinkedIn, X, YouTube, Instagram).
-- Do not claim actual search volume or rank metrics without external tool data.
+SECTION 2: TOP 5 TARGET SEARCH QUERIES
+- Provide EXACTLY 5 high-impact, commercial/transactional/informational/discovery search queries relevant to the brand's services, business category, and target audience.
+- Platforms supported: Google Search, Facebook, Instagram, LinkedIn, X (Twitter).
+- For each query: specify query text, relevant platform(s), search intent (e.g. Service Search, Business Discovery, Inspiration, B2B Search, Service Discovery), business relevance, and specific target audience persona.
+- NOTE: Platform-specific search volume or ranking data should only be reported when supported by actual external tool data. Do NOT invent search volumes.
 
-SECTION 3: SEO RECOMMENDATIONS
-- Provide the primary target keyword, 3-5 secondary keywords, long-tail query phrases, and vertical business-related keywords.
-- Recommend an optimized HTML title tag (50-60 characters) and meta description (140-160 characters), designed to improve click-through rates while contrasting with the existing metadata.
-- Offer actionable content recommendations (pillar pages, topic clusters), specific on-page improvements (heading hierarchy, hero value proposition, conversion CTAs), and evidence-based technical SEO suggestions.
+SECTION 3: SEO IMPROVEMENT
+- A. Keyword Recommendations: Primary keyword, secondary keywords (3-5), long-tail keywords, and relevant business keywords.
+- B. SEO Title: Recommended SEO title (recommended_title, 50-60 characters, distinguishing from current title), incorporating primary keyword and improved title structure.
+- C. Meta Description: Recommended meta description (meta_description, 140-160 characters), short human-friendly business summary, incorporating relevant keywords.
+- D. Additional Support Content: Suggest additional website content to improve search visibility (supporting_content) such as service landing pages, industry-specific pages, Frequently Asked Questions (FAQs), blog topics, location-based landing pages, and supporting business articles.
+- Include actionable on-page improvements and evidence-based technical SEO suggestions.
 
-SECTION 4: TOP FIVE SERVICES / PRODUCTS
-- Provide between 1 and 5 core services or products.
-- For each item: name, detailed description, target industry verticals, target customer persona, and primary business benefit / ROI.
-- source: classify strictly as "extracted" if explicitly listed on the website, or "inferred" if derived from overall brand context.
+SECTION 4: TOP 5 SERVICES
+- Identify the five most important services or core products from the website.
+- For each service: service name (name), short service explanation (description), target industry (target_industry), potential customer type (target_customer), and main benefit / ROI (main_benefit).
+- Services must be identified from actual website content wherever possible. Clearly label source as "extracted" (from website text) or "inferred" (inferred recommendations).
 
-SECTION 5: TARGET AUDIENCE
-- Segment the market into primary audience (economic buyers / decision-makers) and secondary audience (influencers, end-users).
-- Detail target industry segments, business types (B2B, B2C, SMB, Enterprise), archetypal customer personas, geographic markets, customer pain points / needs, professional interests, actionable marketing segments, and recommended targeting opportunities (e.g., specific channels, account-based marketing, content angles).
+SECTION 5: TARGET AUDIENCE IDENTIFICATION
+- Primary target audience (primary_audience): Core decision-makers and economic buyers.
+- Secondary target audience (secondary_audience): Influencers, end-users, technical evaluators.
+- Industry segments & industries: Relevant business industries and verticals.
+- Business types: Small Businesses, Startups, Enterprise Companies, Retail Businesses, Professional Services, etc.
+- Customer profiles: Archetypal customer personas.
+- Location / geographical focus: Regional or international focus (location_focus / geographic_markets).
+- Customer needs and challenges: Core pain points, problems, and requirements.
+- Potential customer interests: Professional or consumer interests.
+- Recommended audience segments: Recommended segments for marketing and targeting opportunities.
 - source_classification: label as "website_confirmed" or "inferred".
 
 Conform strictly to the JSON schema requested.
