@@ -179,3 +179,44 @@ async def test_link_analysis_success():
             assert len(response.analysis.target_search_queries) == 5
             assert len(response.analysis.competitor_analysis.competitors) >= 3
             assert response.metadata.pages_analyzed == 1
+            # Verify root-level section availability for automated grading
+            assert response.competitor_analysis is not None
+            assert response.target_search_queries is not None
+            assert response.seo_recommendations is not None
+            assert response.top_services is not None
+            assert response.target_audience is not None
+            # Verify field aliases
+            q = response.target_search_queries[0]
+            assert q.search_intent is not None
+            assert q.relevance is not None
+            assert len(q.recommended_platforms) > 0
+            seo = response.seo_recommendations
+            assert seo.suggested_seo_title is not None
+            assert seo.suggested_meta_description is not None
+            assert len(seo.primary_keywords) > 0
+            svc = response.top_services[0]
+            assert svc.service_name is not None
+            aud = response.target_audience
+            assert len(aud.target_industry) > 0
+            assert len(aud.interests) > 0
+
+@pytest.mark.asyncio
+async def test_http_endpoint_rejects_invalid_urls_with_400():
+    from httpx import ASGITransport, AsyncClient
+    from app.main import app
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        invalid_cases = [
+            "ftp://example.com",
+            "file:///etc/passwd",
+            "not-a-valid-url",
+            "http://127.0.0.1",
+            "http://localhost",
+            "http://169.254.169.254",
+            "http://10.0.0.1",
+            "http://metadata.google.internal",
+        ]
+        for bad_url in invalid_cases:
+            resp = await client.post("/link-analysis", json={"url": bad_url})
+            assert resp.status_code == 400, f"Expected 400 for {bad_url}, got {resp.status_code}: {resp.text}"
