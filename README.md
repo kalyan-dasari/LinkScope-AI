@@ -264,24 +264,12 @@ Open in your browser:
 - Enter a public URL (e.g., `{"url": "https://www.studearning.tech/"}`).
 - Click **Execute** to view status codes, full response schemas, and execution latency.
 
-### 2. Visual Interactive Presentation Dashboard (Live Demo)
+### 2. Interactive ReDoc Documentation & Health Probes
 Open in your browser:  
-👉 **[http://127.0.0.1:8000/demo](http://127.0.0.1:8000/demo)** *(or double-click `demo.html` in your project folder)*
-
-- Provides a clean, modern UI for evaluator walkthroughs and presentations.
-- Includes pre-configured preset buttons (`studearning.tech`, `stripe.com`, `github.com`).
-- Visually formats the 5 assessment sections:
-  1. **Competitor Analysis Cards** (with AI verification badges, brand gaps & opportunities)
-  2. **Top 5 Target Search Queries Table** (Intent, audience, platforms)
-  3. **SEO Audit & Keywords** (Title tags, meta descriptions, on-page suggestions)
-  4. **Top 5 Services** (With target customer & ROI benefits)
-  5. **Target Audience Segments** (Decision makers, pain points, verticals)
-  6. **Raw JSON Inspector** with complete Pydantic payload verification.
-
-### 3. Service Health & Alternative Documentation
-- **Service Health Probe**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 - **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **API Root**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **API Root Metadata**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
+- **Service Health Probe**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
+- **OpenAPI Schema (JSON)**: [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json)
 
 ---
 
@@ -291,7 +279,6 @@ Open in your browser:
 | :--- | :--- | :--- | :--- |
 | `GET` | `/` | API metadata, version, and documentation links | `200 OK` |
 | `GET` | `/health` | Liveness and readiness health probe | `200 OK` |
-| `GET` | `/demo` | Optional visual presentation dashboard for live evaluator walkthroughs | `200 OK` |
 | `POST` | `/link-analysis` | Crawls website and performs AI analysis | `200`, `400`, `422`, `502`, `503`, `500` |
 
 ---

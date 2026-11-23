@@ -101,10 +101,18 @@ LinkScope AI implements concrete production providers:
 
 ---
 
-## 5. Visual Interactive Demo Presentation Layer
+## 5. Security & Robustness Architecture
 
-While the core application strictly adheres to the Python backend specification, LinkScope AI includes a self-contained, zero-dependency presentation dashboard served at `GET /demo` (and saved in `demo.html`).
+LinkScope AI implements defense-in-depth security principles across every architectural layer:
 
-- **Architecture**: Single-page static HTML/JavaScript client with Tailwind CSS via CDN.
-- **Interactivity**: Submits `POST /link-analysis` directly to the FastAPI server, providing live latency monitoring, preset targets, structured cards for the 5 analysis sections, and an expandable raw JSON inspector.
-- **Safety**: Fully decoupled from API contracts (`/`, `/health`, and `/link-analysis`), ensuring zero degradation of test suites or backend isolation.
+1. **Pre-flight & Socket-level SSRF Protection**:
+   - Pre-flight DNS resolution validates target domains against IPv4/IPv6 private ranges, loopback, CGNAT, link-local, and cloud metadata IPs (`169.254.169.254`, `100.100.100.200`, etc.).
+   - Connection-layer `SSRFSafeBackend` intercepts the raw socket connection immediately prior to TCP handshake, preventing Time-of-Check to Time-of-Use (TOCTOU) DNS rebinding attacks.
+   - Port whitelist strictly enforces standard web ports (`80`, `443`, `8080`, `8443`).
+
+2. **Hardened CORS Policy**:
+   - `CORSMiddleware` configured with `allow_credentials=False` and restricted methods (`GET`, `POST`, `OPTIONS`) to prevent credential leakage and OWASP security violations.
+
+3. **Schema Compliance & Dual-Contract Alignment**:
+   - Pydantic v2 data models with custom model validators provide seamless dual-compatibility across both nested payload structures and direct top-level assessment keys (`brand_name`, `search_intent`, `suggested_seo_title`, `service_name`, etc.).
+   - Strict bounded constraints enforce exactly 5 target search queries and top 5 services, guaranteeing deterministic response shapes for downstream consumers and automated evaluators.

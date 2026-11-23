@@ -47,17 +47,6 @@ curl -X GET "http://127.0.0.1:8000/health"
 
 ---
 
-### `GET /demo`
-Visual interactive dashboard for evaluators and stakeholder walkthroughs.
-
-**Request:**
-Open in web browser: `http://127.0.0.1:8000/demo` (or double click `demo.html`).
-
-**Response (200 OK):**
-Returns standalone HTML5 single-page application with Tailwind CSS, live latency metrics, preset links, and responsive cards for all 5 assessment sections.
-
----
-
 ## 2. Analysis Endpoint: `POST /link-analysis`
 
 ### A. Example 1: B2B Enterprise SaaS (Illustrative Example)
