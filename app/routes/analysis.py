@@ -9,6 +9,8 @@ from app.exceptions import (
 from app.schemas import ErrorResponse, LinkAnalysisRequest, LinkAnalysisResponse
 from app.services.analysis_service import analyze_website
 
+from app.utils.url_validator import validate_public_url
+
 HTTP_422 = getattr(status, "HTTP_422_UNPROCESSABLE_CONTENT", 422)
 
 router = APIRouter(tags=["Link Analysis"])
@@ -48,7 +50,9 @@ router = APIRouter(tags=["Link Analysis"])
 async def link_analysis(payload: LinkAnalysisRequest):
     """Analyze a public website URL."""
     try:
-        return await analyze_website(str(payload.url))
+        url_str = payload.url.strip() if isinstance(payload.url, str) else str(payload.url)
+        validate_public_url(url_str)
+        return await analyze_website(url_str)
     except InvalidUrlError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except ContentTooShortError as exc:
