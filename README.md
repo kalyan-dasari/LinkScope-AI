@@ -238,16 +238,18 @@ Execute Uvicorn using the project's virtual environment:
 
 ```powershell
 # Windows PowerShell (using the project venv):
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 4000
 
 # macOS / Linux:
 source .venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn app.main:app --reload --host 0.0.0.0 --port 4000
 ```
+
+> **Note**: Port `4000` is the default assessment port specified in the requirements. You can also specify `--port 8000` or set `$PORT` as required by your deployment environment.
 
 Once started, the Uvicorn terminal will output:
 ```
-INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+INFO:     Uvicorn running on http://0.0.0.0:4000 (Press CTRL+C to quit)
 INFO:     Started reloader process
 INFO:     Application startup complete.
 ```
@@ -258,7 +260,7 @@ INFO:     Application startup complete.
 
 ### 1. Interactive Swagger OpenAPI Documentation (Primary Interface)
 Open in your browser:  
-👉 **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**
+👉 **[http://127.0.0.1:4000/docs](http://127.0.0.1:4000/docs)**
 
 - Click on **`POST /link-analysis`** &rarr; **Try it out**.
 - Enter a public URL (e.g., `{"url": "https://www.studearning.tech/"}`).
@@ -266,10 +268,10 @@ Open in your browser:
 
 ### 2. Interactive ReDoc Documentation & Health Probes
 Open in your browser:  
-- **ReDoc Documentation**: [http://127.0.0.1:8000/redoc](http://127.0.0.1:8000/redoc)
-- **API Root Metadata**: [http://127.0.0.1:8000/](http://127.0.0.1:8000/)
-- **Service Health Probe**: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
-- **OpenAPI Schema (JSON)**: [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json)
+- **ReDoc Documentation**: [http://127.0.0.1:4000/redoc](http://127.0.0.1:4000/redoc)
+- **API Root Metadata**: [http://127.0.0.1:4000/](http://127.0.0.1:4000/)
+- **Service Health Probe**: [http://127.0.0.1:4000/health](http://127.0.0.1:4000/health)
+- **OpenAPI Schema (JSON)**: [http://127.0.0.1:4000/openapi.json](http://127.0.0.1:4000/openapi.json)
 
 ---
 
@@ -287,7 +289,7 @@ Open in your browser:
 
 ### cURL:
 ```bash
-curl -X POST "http://127.0.0.1:8000/link-analysis" \
+curl -X POST "http://127.0.0.1:4000/link-analysis" \
      -H "Content-Type: application/json" \
      -d '{"url": "https://example.com"}'
 ```
@@ -295,7 +297,7 @@ curl -X POST "http://127.0.0.1:8000/link-analysis" \
 ### PowerShell:
 ```powershell
 Invoke-RestMethod -Method Post `
-  -Uri "http://127.0.0.1:8000/link-analysis" `
+  -Uri "http://127.0.0.1:4000/link-analysis" `
   -ContentType "application/json" `
   -Body '{"url": "https://example.com"}'
 ```
@@ -336,6 +338,7 @@ Invoke-RestMethod -Method Post `
         }
       ],
       "brand_strengths": ["Globally recognized", "Zero maintenance overhead"],
+      "strengths": ["Globally recognized", "Zero maintenance overhead"],
       "brand_weaknesses": ["Contains no interactive content or documentation search"],
       "competitive_gaps": ["Third-party mock API sites provide dynamic payload endpoints"],
       "competitive_advantages": ["Reserved by IANA under RFC 2606 and RFC 6761"],
@@ -385,6 +388,7 @@ Invoke-RestMethod -Method Post `
       "business_related_keywords": ["rfc standards", "mock url"],
       "recommended_title": "Example Domain &mdash; Official Illustrative Reference",
       "meta_description": "Official documentation domain established by IANA for illustrative use in documents and test environments without prior coordination.",
+      "supporting_content": ["Guide to RFC Reserved Domains", "Best Practices for Mock URLs in APIs"],
       "content_recommendations": ["Guide to RFC Reserved Domains", "Best Practices for Mock URLs in APIs"],
       "on_page_improvements": ["Add clear links to RFC 2606 specifications"],
       "technical_seo_suggestions": ["Ensure canonical link tag is present in HTML head"]
@@ -402,6 +406,7 @@ Invoke-RestMethod -Method Post `
     "target_audience": {
       "primary_audience": ["Software Developers", "Technical Writers"],
       "secondary_audience": ["Network Administrators", "Educators"],
+      "industries": ["Information Technology", "Higher Education"],
       "industry_segments": ["Information Technology", "Higher Education"],
       "business_types": ["B2B", "Open Source", "Standards Bodies"],
       "customer_profiles": ["Technical Authors", "API Architects"],
@@ -599,7 +604,7 @@ pytest -v
 docker build -t linkscope-ai .
 
 # Run the container
-docker run -d -p 8000:8000 \
+docker run -d -p 4000:4000 \
   --name linkscope \
   -e GEMINI_API_KEY="your_api_key_here" \
   linkscope-ai
