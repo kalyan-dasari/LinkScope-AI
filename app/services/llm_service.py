@@ -111,6 +111,7 @@ GROQ_SCHEMA_SKELETON = """{
         }
       ],
       "brand_strengths": ["Strength 1"],
+      "strengths": ["Strength 1"],
       "brand_weaknesses": ["Weakness 1"],
       "competitive_gaps": ["Gap 1"],
       "competitive_advantages": ["Advantage 1"],
@@ -118,10 +119,10 @@ GROQ_SCHEMA_SKELETON = """{
     },
     "target_search_queries": [
       {"query": "Query 1", "platforms": ["Google"], "intent": "Commercial", "business_relevance": "Relevance", "target_audience": "Audience persona"},
-      {"query": "Query 2", "platforms": ["Google"], "intent": "Informational", "business_relevance": "Relevance", "target_audience": "Audience persona"},
-      {"query": "Query 3", "platforms": ["Google"], "intent": "Transactional", "business_relevance": "Relevance", "target_audience": "Audience persona"},
-      {"query": "Query 4", "platforms": ["LinkedIn"], "intent": "Commercial", "business_relevance": "Relevance", "target_audience": "Audience persona"},
-      {"query": "Query 5", "platforms": ["Google"], "intent": "Navigational", "business_relevance": "Relevance", "target_audience": "Audience persona"}
+      {"query": "Query 2", "platforms": ["Facebook"], "intent": "Business Discovery", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 3", "platforms": ["Instagram"], "intent": "Inspiration", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 4", "platforms": ["LinkedIn"], "intent": "B2B Search", "business_relevance": "Relevance", "target_audience": "Audience persona"},
+      {"query": "Query 5", "platforms": ["X"], "intent": "Service Discovery", "business_relevance": "Relevance", "target_audience": "Audience persona"}
     ],
     "seo_improvements": {
       "primary_keyword": "Primary keyword",
@@ -130,6 +131,7 @@ GROQ_SCHEMA_SKELETON = """{
       "business_related_keywords": ["Industry keyword 1"],
       "recommended_title": "Optimized HTML Title (50-60 chars)",
       "meta_description": "Optimized Meta Description (140-160 chars)",
+      "supporting_content": ["Service landing pages", "Frequently Asked Questions", "Industry pages"],
       "content_recommendations": ["Content recommendation 1"],
       "on_page_improvements": ["On-page improvement 1"],
       "technical_seo_suggestions": ["Technical suggestion 1"]
@@ -147,6 +149,7 @@ GROQ_SCHEMA_SKELETON = """{
     "target_audience": {
       "primary_audience": ["Primary decision-makers"],
       "secondary_audience": ["Secondary users/evaluators"],
+      "industries": ["Segment 1"],
       "industry_segments": ["Segment 1"],
       "business_types": ["B2B / B2C"],
       "customer_profiles": ["Profile 1"],
