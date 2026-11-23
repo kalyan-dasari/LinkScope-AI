@@ -27,8 +27,23 @@ class Settings(BaseSettings):
     @property
     def active_provider(self) -> str:
         provider = self.llm_provider.lower().strip()
-        # Auto-detect Groq if Groq key is set and Gemini is not
-        if (not self.gemini_api_key or self.gemini_api_key == "replace_with_your_key") and self.groq_api_key:
+        gemini_valid = bool(
+            self.gemini_api_key
+            and self.gemini_api_key.strip() not in ("", "replace_with_your_key", "your_gemini_api_key_here")
+        )
+        groq_valid = bool(
+            self.groq_api_key
+            and self.groq_api_key.strip() not in ("", "replace_with_your_key", "your_groq_api_key_here")
+        )
+
+        # If Gemini key is set, prioritize Gemini (the primary assessment provider)
+        if gemini_valid and provider != "groq":
+            return "gemini"
+        if provider == "groq" and groq_valid:
+            return "groq"
+        if gemini_valid:
+            return "gemini"
+        if groq_valid:
             return "groq"
         return provider
 

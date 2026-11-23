@@ -43,12 +43,16 @@ class GeminiProvider(BaseLLMProvider):
                 ),
             )
         except APIError as exc:
-            if exc.code == 429:
-                raise LLMServiceError(f"Gemini API quota exceeded or rate limit hit (HTTP 429): {exc.message}") from exc
-            raise LLMServiceError(f"Gemini API request failed (HTTP {exc.code}): {exc.message}") from exc
-        except (TimeoutError, TimeoutException if "TimeoutException" in globals() else TimeoutError) as exc:
+            code = getattr(exc, "code", None) or 500
+            msg = getattr(exc, "message", None) or str(exc)
+            if code == 429:
+                raise LLMServiceError(f"Gemini API quota exceeded or rate limit hit (HTTP 429): {msg}") from exc
+            raise LLMServiceError(f"Gemini API request failed (HTTP {code}): {msg}") from exc
+        except TimeoutError as exc:
             raise LLMServiceError(f"Gemini API request timed out: {exc}") from exc
         except Exception as exc:
+            if "Timeout" in type(exc).__name__:
+                raise LLMServiceError(f"Gemini API request timed out: {exc}") from exc
             raise LLMServiceError(f"LLM provider error ({type(exc).__name__}): {exc}") from exc
 
         raw_text = response.text or ""
@@ -56,7 +60,12 @@ class GeminiProvider(BaseLLMProvider):
             raise LLMServiceError("The LLM returned an empty response.")
 
         try:
-            return AnalysisPayload.model_validate_json(raw_text)
+            payload = AnalysisPayload.model_validate_json(raw_text)
+            if not payload.analysis.competitor_analysis.brand_name:
+                payload.analysis.competitor_analysis.brand_name = payload.brand.name
+            if not payload.analysis.competitor_analysis.industry_category:
+                payload.analysis.competitor_analysis.industry_category = payload.brand.category
+            return payload
         except Exception as exc:
             raise LLMServiceError(f"LLM output failed schema validation: {exc}") from exc
 
