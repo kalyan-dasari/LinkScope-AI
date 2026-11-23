@@ -258,7 +258,12 @@ class GroqProvider(BaseLLMProvider):
             raise LLMServiceError("Groq returned an empty response.")
 
         try:
-            return AnalysisPayload.model_validate_json(raw_text)
+            payload = AnalysisPayload.model_validate_json(raw_text)
+            if not payload.analysis.competitor_analysis.brand_name:
+                payload.analysis.competitor_analysis.brand_name = payload.brand.name
+            if not payload.analysis.competitor_analysis.industry_category:
+                payload.analysis.competitor_analysis.industry_category = payload.brand.category
+            return payload
         except Exception as exc:
             raise LLMServiceError(f"Groq LLM output failed schema validation: {exc}") from exc
 

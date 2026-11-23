@@ -21,6 +21,22 @@ class LinkAnalysisRequest(BaseModel):
         examples=["https://example.com"],
     )
 
+    @field_validator("url")
+    @classmethod
+    def validate_url_field(cls, v: str) -> str:
+        if not v or not isinstance(v, str):
+            raise ValueError("A valid URL string is required.")
+        from urllib.parse import urlparse
+        parsed = urlparse(v.strip())
+        if parsed.scheme not in ("http", "https"):
+            raise ValueError("Only http and https protocols are supported.")
+        if not parsed.hostname:
+            raise ValueError("URL must contain a valid hostname.")
+        # Ensure trailing slash for bare hostnames (e.g. https://example.com -> https://example.com/)
+        if not parsed.path or parsed.path == "":
+            v = f"{v}/"
+        return v
+
 # --- SECTION 1: COMPETITOR VS BRAND ANALYSIS ---
 
 class Competitor(BaseModel):
@@ -331,12 +347,6 @@ class AnalysisSections(BaseModel):
             ]
             if len(valid) > 5:
                 return valid[:5]
-            # If slightly fewer than 5, duplicate the last item with modified intent to preserve valid length
-            while len(valid) < 5 and len(valid) > 0:
-                last_item = dict(valid[-1]) if isinstance(valid[-1], dict) else valid[-1].model_dump()
-                last_item["query"] = f"{last_item.get('query', 'query')} alternative"
-                last_item["intent"] = "Informational"
-                valid.append(last_item)
             return valid
         return v
 
