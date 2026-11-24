@@ -237,19 +237,22 @@ MAX_REDIRECTS=5
 Execute Uvicorn using the project's virtual environment:
 
 ```powershell
-# Windows PowerShell (using the project venv):
+# Windows PowerShell (Recommended for local browser access):
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 4000
+
+# Alternative (listening on all network interfaces / Docker):
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 4000
 
 # macOS / Linux:
 source .venv/bin/activate
-uvicorn app.main:app --reload --host 0.0.0.0 --port 4000
+uvicorn app.main:app --reload --host 127.0.0.1 --port 4000
 ```
 
 > **Note**: Port `4000` is the default assessment port specified in the requirements. You can also specify `--port 8000` or set `$PORT` as required by your deployment environment.
 
 Once started, the Uvicorn terminal will output:
 ```
-INFO:     Uvicorn running on http://0.0.0.0:4000 (Press CTRL+C to quit)
+INFO:     Uvicorn running on http://127.0.0.1:4000 (Press CTRL+C to quit)
 INFO:     Started reloader process
 INFO:     Application startup complete.
 ```
@@ -258,20 +261,44 @@ INFO:     Application startup complete.
 
 ## 8.1 How to View & Test the Application
 
+> [!IMPORTANT]
+> **Browser Access (`localhost` vs `0.0.0.0`)**:  
+> If Uvicorn displays `Uvicorn running on http://0.0.0.0:4000`, **do not type `0.0.0.0` into your web browser**. In networking, `0.0.0.0` is a bind address telling the server to listen on all interfaces; modern browsers (Chrome, Edge, Brave, Safari) block direct navigation to `0.0.0.0` and show **`ERR_ADDRESS_INVALID`**.  
+> **Always use `localhost` or `127.0.0.1` in your browser:**  
+> 👉 **[http://localhost:4000/docs](http://localhost:4000/docs)** *(or [http://127.0.0.1:4000/docs](http://127.0.0.1:4000/docs))*
+
 ### 1. Interactive Swagger OpenAPI Documentation (Primary Interface)
 Open in your browser:  
-👉 **[http://127.0.0.1:4000/docs](http://127.0.0.1:4000/docs)**
+👉 **[http://localhost:4000/docs](http://localhost:4000/docs)** *(or [http://127.0.0.1:4000/docs](http://127.0.0.1:4000/docs))*
 
-- Click on **`POST /link-analysis`** &rarr; **Try it out**.
-- Enter a public URL (e.g., `{"url": "https://www.studearning.tech/"}`).
-- Click **Execute** to view status codes, full response schemas, and execution latency.
+**Step-by-Step Testing & Viewing Results:**
+1. Click on the green **`POST /link-analysis`** bar to expand it.
+2. Click the **"Try it out"** button in the top right corner.
+3. In the **Request body** text area, enter the website URL you want to analyze:
+   ```json
+   {
+     "url": "https://stripe.com"
+   }
+   ```
+4. Click the blue **"Execute"** button.
+5. **Where to see the output:**
+   - Scroll down immediately below the button to the **"Responses"** section.
+   - Look under **"Server response"** &rarr; **"Code: 200"**.
+   - Under **"Response body"**, you will see the complete structured JSON output featuring all 5 assessment sections:
+     - `brand`: Brand name, category, and summary
+     - `analysis.competitor_analysis`: Direct competitors (min 3), strengths, weaknesses, and market opportunities
+     - `analysis.target_search_queries`: Exactly 5 high-intent queries mapped across Google, Facebook, Instagram, LinkedIn, and X
+     - `analysis.seo_improvements`: Target keywords, title tag, meta description, and supporting content recommendations
+     - `analysis.top_services`: Core 5 services with target customer and ROI benefits
+     - `analysis.target_audience`: Decision-makers, business types, customer needs, and marketing segments
+     - `metadata`: Crawled page count and processing latency in seconds
 
 ### 2. Interactive ReDoc Documentation & Health Probes
 Open in your browser:  
-- **ReDoc Documentation**: [http://127.0.0.1:4000/redoc](http://127.0.0.1:4000/redoc)
-- **API Root Metadata**: [http://127.0.0.1:4000/](http://127.0.0.1:4000/)
-- **Service Health Probe**: [http://127.0.0.1:4000/health](http://127.0.0.1:4000/health)
-- **OpenAPI Schema (JSON)**: [http://127.0.0.1:4000/openapi.json](http://127.0.0.1:4000/openapi.json)
+- **Interactive ReDoc**: [http://localhost:4000/redoc](http://localhost:4000/redoc)
+- **API Root Metadata**: [http://localhost:4000/](http://localhost:4000/)
+- **Service Health Probe**: [http://localhost:4000/health](http://localhost:4000/health)
+- **OpenAPI Schema (JSON)**: [http://localhost:4000/openapi.json](http://localhost:4000/openapi.json)
 
 ---
 
