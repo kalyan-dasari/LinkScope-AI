@@ -1,5 +1,6 @@
 import asyncio
 import ipaddress
+import json
 import socket
 from urllib.parse import urljoin, urlparse
 import anyio
@@ -10,7 +11,21 @@ from app.config import settings
 from app.exceptions import InvalidUrlError, WebsiteInaccessibleError
 from app.utils.url_validator import _is_ip_public, validate_public_url
 
-USER_AGENT = "LinkScopeAI/0.1 (website analysis; assessment project)"
+USER_AGENT = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/131.0.0.0 Safari/537.36"
+)
+
+DEFAULT_HEADERS = {
+    "User-Agent": USER_AGENT,
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Sec-Ch-Ua": '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
+    "Sec-Ch-Ua-Mobile": "?0",
+    "Sec-Ch-Ua-Platform": '"Windows"',
+}
+
 RELEVANT_PATH_HINTS = (
     "about",
     "service",
@@ -69,9 +84,31 @@ def _extract_page(html: str, url: str) -> dict:
         # Graceful handling for malformed HTML
         soup = BeautifulSoup("", "html.parser")
 
-    for tag in soup(["script", "style", "noscript", "svg", "iframe", "nav", "footer", "form", "button"]):
-        tag.decompose()
+    # 1. Extract structured JSON-LD schema before decomposing scripts
+    schema_texts = []
+    for s in soup.find_all("script", type="application/ld+json"):
+        try:
+            raw = s.string or ""
+            if not raw.strip():
+                continue
+            data = json.loads(raw)
 
+            def walk_schema(obj):
+                if isinstance(obj, dict):
+                    for k, v in obj.items():
+                        if k in ("name", "description", "headline", "about", "keywords", "serviceType", "offers") and isinstance(v, str):
+                            schema_texts.append(f"{k}: {v.strip()}")
+                        elif isinstance(v, (dict, list)):
+                            walk_schema(v)
+                elif isinstance(obj, list):
+                    for item in obj:
+                        walk_schema(item)
+
+            walk_schema(data)
+        except Exception:
+            pass
+
+    # 2. Extract rich metadata from head
     title = soup.title.get_text(" ", strip=True) if soup.title else ""
     description = ""
     meta = (
@@ -82,23 +119,43 @@ def _extract_page(html: str, url: str) -> dict:
     if meta and meta.get("content"):
         description = meta["content"].strip()
 
+    meta_keywords = ""
+    kw_tag = soup.find("meta", attrs={"name": "keywords"})
+    if kw_tag and kw_tag.get("content"):
+        meta_keywords = kw_tag["content"].strip()
+
+    site_name = ""
+    sn_tag = soup.find("meta", attrs={"property": "og:site_name"})
+    if sn_tag and sn_tag.get("content"):
+        site_name = sn_tag["content"].strip()
+
     headings = [h.get_text(" ", strip=True) for h in soup.find_all(["h1", "h2", "h3"]) if h.get_text(strip=True)]
 
-    # Prioritize main semantic content block
-    main = soup.find("main") or soup.find("article") or soup.body or soup
-    body_text = " ".join(main.stripped_strings) if main else ""
+    # 3. Strip non-content and layout boilerplate tags
+    for tag in soup(["script", "style", "noscript", "svg", "iframe", "footer"]):
+        tag.decompose()
+
+    # 4. Extract body text from the full document body to prevent losing sections outside <main>
+    target_root = soup.body if soup.body else soup
+    body_text = " ".join(target_root.stripped_strings) if target_root else ""
     body_text = " ".join(body_text.split())
 
-    # Build comprehensive textual content: combine metadata and body text.
-    # This ensures modern SPAs (React/Vue/Vite) with empty body shells but rich
-    # titles and meta descriptions can still be understood and analyzed.
+    # 5. Build comprehensive textual content: combine metadata and body text.
+    # This guarantees that modern SPAs (React/Vue/Vite) with empty body shells but rich
+    # titles, meta descriptions, and JSON-LD schemas can still be analyzed accurately.
     content_blocks = []
     if title:
         content_blocks.append(f"Title: {title}")
+    if site_name and site_name.lower() not in title.lower():
+        content_blocks.append(f"Brand: {site_name}")
     if description:
         content_blocks.append(f"Meta Description: {description}")
+    if meta_keywords:
+        content_blocks.append(f"Keywords: {meta_keywords}")
+    if schema_texts:
+        content_blocks.append("Structured Data: " + " | ".join(schema_texts[:10]))
     if headings:
-        content_blocks.append("Headings: " + " | ".join(headings))
+        content_blocks.append("Headings: " + " | ".join(headings[:20]))
     if body_text:
         content_blocks.append(body_text)
 
@@ -235,7 +292,7 @@ async def extract_website(url: str) -> list[dict]:
     limits = httpx.Limits(max_keepalive_connections=5, max_connections=10)
     transport = SSRFSafeTransport(limits=limits)
 
-    async with httpx.AsyncClient(timeout=timeout, transport=transport, headers={"User-Agent": USER_AGENT}) as client:
+    async with httpx.AsyncClient(timeout=timeout, transport=transport, headers=DEFAULT_HEADERS) as client:
         home = await _fetch(client, url)
         candidate_pages = _choose_pages(home, url, settings.max_pages)
         pages = [home]

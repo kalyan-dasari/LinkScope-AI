@@ -24,7 +24,7 @@ async def analyze_website(url: str) -> LinkAnalysisResponse:
 
     # Step 2: Validate extracted content volume
     combined_text = " ".join(page.get("text", "") for page in pages).strip()
-    if len(combined_text) < 100:
+    if len(combined_text) < 50:
         raise ContentTooShortError(
             f"The website at '{url}' did not provide sufficient readable text ({len(combined_text)} characters extracted). "
             "It may be heavily JavaScript-dependent, password-protected, or empty."
