@@ -102,7 +102,7 @@ To guarantee production scalability and protect against API cost runaway, LinkSc
 
 ## 5. Architectural Recommendation & Conclusion
 
-For the **Chivox AI Practical Assessment**, **Google Gemini 2.0 Flash** is selected as the default production model:
+For the **Dxora Technologies / CREST Practical Assessment**, **Google Gemini 2.0 Flash** is selected as the default production model:
 1. Native Pydantic integration guarantees zero parsing failures.
 2. 1M token context safely ingests large multi-page crawls.
 3. Industry-leading latency (~1.5s p50) provides responsive API user experience.
